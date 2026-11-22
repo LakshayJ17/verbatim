@@ -32,6 +32,8 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# The template has placeholder values only and should be committed.
+!.env.example
 
 # vercel
 .vercel
@@ -39,3 +41,38 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# logs
+*.log
+logs/
+
+# editors and OS
+.vscode/
+.idea/
+*.swp
+Thumbs.db
+
+# Supabase CLI local state
+supabase/.temp/
+supabase/.branches/
+
+# design-taste inspector output (screenshots and reports)
+.taste-skill/
+
+# AI coding tool local config
+.aider-desk/
+
+# local debug scripts
+_probe*.mjs
+
+# AI agent skills and assistant config (installed locally per developer)
+.agents/
+skills-lock.json
+AGENTS.md
+CLAUDE.md
+CLAUDE.local.md
+.claude/
+
+# Private developer notes and tools (never committed)
+PROJECT_NOTES.md
+scripts/private/

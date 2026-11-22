@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Locally installed AI agent skills and tool output, not app code.
+    ".agents/**",
+    ".taste-skill/**",
+    "supabase/.temp/**",
   ]),
 ]);
 
