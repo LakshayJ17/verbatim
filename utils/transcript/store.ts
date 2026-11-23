@@ -17,16 +17,35 @@ export type TranscriptAcquisition =
 export function sanitizeSegments(segments: NormalizedSegment[]): NormalizedSegment[] {
   const out: NormalizedSegment[] = [];
   for (const s of segments.slice(0, 20_000)) {
-    const text = sanitizeUntrustedText(s.text ?? "", 2_000);
-    if (!text) continue;
-    out.push({
-      start: typeof s.start === "number" && Number.isFinite(s.start) ? s.start : 0,
-      end: typeof s.end === "number" && Number.isFinite(s.end) ? s.end : s.start ?? 0,
-      text,
-      ...(s.speaker ? { speaker: sanitizeUntrustedText(s.speaker, 80) } : {}),
-    });
+    const start = typeof s.start === "number" && Number.isFinite(s.start) ? s.start : 0;
+    const end = typeof s.end === "number" && Number.isFinite(s.end) ? s.end : s.start ?? 0;
+    const speaker = s.speaker ? { speaker: sanitizeUntrustedText(s.speaker, 80) } : {};
+    // Long segments are split, not cut: a plain-text transcript arrives as one
+    // segment, and cutting it at 2,000 characters lost all but the first minute.
+    for (const piece of splitLongText(s.text ?? "", SEGMENT_MAX_CHARS)) {
+      const text = sanitizeUntrustedText(piece, SEGMENT_MAX_CHARS);
+      if (!text) continue;
+      out.push({ start, end, text, ...speaker });
+      if (out.length >= 20_000) return out;
+    }
   }
   return out;
+}
+
+const SEGMENT_MAX_CHARS = 2_000;
+
+/** Splits text into pieces of at most `max` characters, at spaces where possible. */
+export function splitLongText(text: string, max: number): string[] {
+  const pieces: string[] = [];
+  let rest = text.trim();
+  while (rest.length > max) {
+    const cut = rest.lastIndexOf(" ", max);
+    const at = cut > max * 0.5 ? cut : max;
+    pieces.push(rest.slice(0, at));
+    rest = rest.slice(at).trimStart();
+  }
+  if (rest) pieces.push(rest);
+  return pieces;
 }
 
 /** Reads normalized_segments whether it was stored as a JSON array or (legacy) a JSON string. */

@@ -1,11 +1,11 @@
 "use client";
 
 import { useActionState, useState, useTransition } from "react";
-import { login, continueAsGuest, resendConfirmation } from "@/app/actions/auth";
+import { login, resendConfirmation } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
-import { UserCircle } from "@phosphor-icons/react/dist/ssr";
+import { QuickSignIn } from "@/components/quick-sign-in";
 
 const initialState: FormState = {
   error: "",
@@ -14,8 +14,6 @@ const initialState: FormState = {
 };
 
 type FormState = { error: string; needsConfirmation: boolean; email: string };
-
-import { createClient } from "@/utils/supabase/client";
 
 export function LoginForm() {
   const [state, formAction, isPending] = useActionState(
@@ -38,33 +36,13 @@ export function LoginForm() {
       setResendNote(("message" in res && res.message) || ("error" in res && res.error) || "");
     });
 
-  const handleGoogleLogin = async () => {
-    const supabase = createClient();
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
-  };
-
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-2">
-        <Button variant="outline" className="w-full gap-2" size="lg" onClick={handleGoogleLogin} type="button">
-          Continue with Google
-        </Button>
-        <form action={continueAsGuest}>
-          <Button type="submit" variant="outline" className="w-full gap-2" size="lg">
-            <UserCircle className="size-4" />
-            Continue as guest
-          </Button>
-        </form>
-      </div>
+    <div className="space-y-4">
+      <QuickSignIn />
 
       <p className="text-base text-muted-foreground">Or use your email</p>
 
-      <form action={formAction} className="space-y-4">
+      <form action={formAction} className="space-y-3">
         {state.error && (
           <div role="alert" className="rounded-md bg-destructive/10 p-3 text-base text-destructive">
             <p>{state.error}</p>
@@ -86,7 +64,7 @@ export function LoginForm() {
           </p>
         )}
         
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <label
             htmlFor="email"
             className="text-base font-medium text-foreground"
@@ -103,7 +81,7 @@ export function LoginForm() {
           />
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <div className="flex items-center justify-between">
             <label
               htmlFor="password"
@@ -120,7 +98,7 @@ export function LoginForm() {
           />
         </div>
 
-        <Button type="submit" className="w-full" size="lg" disabled={isPending}>
+        <Button type="submit" className="mt-2 w-full" size="lg" disabled={isPending}>
           {isPending ? "Signing in…" : "Sign in"}
         </Button>
       </form>

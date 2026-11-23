@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import { createClient } from "@/utils/supabase/server";
-import { consumeAnonymousLimit } from "@/utils/rate-limit";
+import { consumeMemoryLimit } from "@/utils/rate-limit";
 import { track } from "@/utils/analytics/track";
 
 /**
@@ -34,7 +34,7 @@ export async function trackClientEvent(event: string, props?: Record<string, unk
     data: { user },
   } = await supabase.auth.getUser();
   if (!user || user.is_anonymous) return;
-  if (!consumeAnonymousLimit(`track:${user.id}`, 60, 60_000)) return;
+  if (!consumeMemoryLimit(`track:${user.id}`, 60, 60_000)) return;
 
   track(user.id, parsed.data.event, parsed.data.props);
 }

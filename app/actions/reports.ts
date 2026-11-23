@@ -1,16 +1,18 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
 import { consumeRateLimit } from "@/utils/rate-limit";
 import { REPORT_MESSAGES, reportInputSchema } from "@/utils/moderation/reports";
 
 type Result = { ok: true; message: string } | { error: string };
 
 /**
- * Lets a signed-in, non-guest user report a post or a comment. Uses the
- * user's own session: the target must be visible to them through RLS (or be
- * an unlisted post they have the link to), and RLS on public.reports only
- * accepts rows where reporter_id = auth.uid().
+ * Lets a signed-in, non-guest user report a post or a comment. The checks
+ * use the user's own session: the target must be visible to them through RLS
+ * (or be an unlisted post they have the link to). The row is then written
+ * with the service role, because browsers can no longer insert reports
+ * directly (that skipped these checks and let created_at be forged).
  */
 export async function reportContent(
   targetType: string,
@@ -58,7 +60,7 @@ export async function reportContent(
   if (!ownerId) return { error: REPORT_MESSAGES.notFound };
   if (ownerId === user.id) return { error: REPORT_MESSAGES.own };
 
-  const { error } = await supabase.from("reports").insert({
+  const { error } = await createAdminClient().from("reports").insert({
     reporter_id: user.id,
     target_type: input.targetType,
     target_id: input.targetId,

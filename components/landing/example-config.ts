@@ -11,15 +11,24 @@ export const SHOWCASE_LINES = [
   "Most of my training is meant to feel easy.",
 ];
 
-/** A design config for the example interview, used by the landing page previews. */
-export function exampleConfig(style: StyleId, text = QUOTES[0].text, format: FormatPresetId = "square"): DesignConfig {
+/**
+ * A design config for the landing page previews. Defaults to the example
+ * interview; pass a speaker and show for a real quote (see podcast-quotes.ts).
+ */
+export function exampleConfig(
+  style: StyleId,
+  text = QUOTES[0].text,
+  format: FormatPresetId = "square",
+  speakerName: string = EPISODE.guest,
+  sourceTitle: string = EPISODE.show
+): DesignConfig {
   const s = DESIGN_STYLES[style];
   return {
     format,
     style,
     palette: s.defaultPalette,
     typography: s.defaultTypography,
-    content: { type: "quote", text, speakerName: EPISODE.guest, sourceTitle: `${EPISODE.show} (example)` },
+    content: { type: "quote", text, speakerName, sourceTitle },
     showAttribution: true,
     showSource: false,
     rendererVersion: 1,

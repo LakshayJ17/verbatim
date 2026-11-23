@@ -3,7 +3,7 @@ import { verifyQuote, type VerificationStatus } from "@/utils/ai/verification";
 
 /**
  * An invented interview used on the landing page to show how Verbatim works.
- * The page labels it as an example. Nothing here is a real person or show.
+ * Nothing here is a real person or show.
  */
 export const EPISODE = {
   show: "The Slow Lane",

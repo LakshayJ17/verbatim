@@ -75,7 +75,7 @@ export function Anatomy() {
                     type: "quote",
                     text: SHOWCASE_LINES[1],
                     speakerName: EPISODE.guest,
-                    sourceTitle: `${EPISODE.show}, ${EPISODE.episode.toLowerCase()} (example)`,
+                    sourceTitle: `${EPISODE.show}, ${EPISODE.episode.toLowerCase()}`,
                   },
                   showAttribution: true,
                   showSource: true,
@@ -83,9 +83,6 @@ export function Anatomy() {
                 }}
               />
             </div>
-            <figcaption className="mt-3 text-center text-[15px] text-muted-foreground">
-              Old School design, portrait 1080 × 1350
-            </figcaption>
           </figure>
 
           <div className="order-3 grid gap-14">

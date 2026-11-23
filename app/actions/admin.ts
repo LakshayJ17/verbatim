@@ -287,6 +287,10 @@ export async function adminSuspendUser(userId: string): Promise<AdminResult> {
 
   const { error } = await admin.auth.admin.updateUserById(input.data, { ban_duration: SUSPEND_DURATION });
   if (error) return { error: "Could not suspend the user." };
+  // A ban only blocks new sign-ins; end the sessions they already have so the
+  // suspension takes effect now, not when their token expires.
+  const { error: sessionError } = await admin.rpc("admin_revoke_sessions", { p_user_id: input.data });
+  if (sessionError) console.error("[admin] could not end the suspended user's sessions:", sessionError.message);
 
   await audit(admin, user.id, "user.suspend", "user", input.data, { ban_duration: SUSPEND_DURATION });
   revalidateAdmin();

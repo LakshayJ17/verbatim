@@ -7,7 +7,6 @@ import { QuoteStatus } from "@/components/quote-status";
 import { ScaledRenderer } from "@/components/creator/scaled-renderer";
 import SplitText from "@/components/reactbits/split-text";
 import { cn } from "@/lib/utils";
-import { DESIGN_STYLES } from "@/utils/design/styles";
 import { EPISODE, QUOTES, formatTimestamp } from "./example-episode";
 import { exampleConfig, SHOWCASE_LINES } from "./example-config";
 
@@ -136,7 +135,7 @@ export function StageSplit() {
 
         {/* Fixed stage */}
         <div className="sticky top-0 z-20 order-1 h-[52svh] self-start overflow-hidden rounded-[var(--radius)] bg-ink lg:top-3 lg:order-2 lg:h-[calc(100svh-24px)]">
-          <div className="absolute inset-x-0 top-0 bottom-11 flex items-start justify-center px-4 pt-4 lg:bottom-14 lg:items-center lg:px-6 lg:pt-0">
+          <div className="absolute inset-0 flex items-start justify-center px-4 pt-4 lg:items-center lg:px-6 lg:pt-0">
             <div data-ui className="grid w-full max-w-[460px]">
               <StageState
                 show={active === 0}
@@ -154,9 +153,6 @@ export function StageSplit() {
                 <ShareState />
               </StageState>
             </div>
-          </div>
-          <div className="t-small absolute inset-x-0 bottom-0 flex h-11 items-center justify-between gap-4 bg-mark px-4 lg:h-14 lg:px-5">
-            <span className="truncate">Example: an invented interview, not a real episode</span>
           </div>
         </div>
       </section>
@@ -217,9 +213,6 @@ function StackState() {
             <div className="overflow-hidden rounded-[var(--radius)]" style={{ aspectRatio: item.ratio }}>
               <ScaledRenderer config={exampleConfig(item.style, item.text, item.format)} />
             </div>
-            <figcaption className="mt-1.5 text-[14px] text-muted-foreground">
-              {item.label}, {DESIGN_STYLES[item.style].label}
-            </figcaption>
           </figure>
         ))}
       </div>

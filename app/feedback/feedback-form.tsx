@@ -74,11 +74,7 @@ export function FeedbackForm({ page }: { page?: string }) {
         {pending ? "Sending…" : "Send feedback"}
       </button>
       <p className="text-sm text-muted-foreground">
-        We store your message, the email if you give one, and your account id if you are signed in. See the{" "}
-        <a href="/privacy" className="underline underline-offset-4">
-          privacy policy
-        </a>
-        .
+        We store your message, the email if you give one, and your account id if you are signed in.
       </p>
     </form>
   );

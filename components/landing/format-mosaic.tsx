@@ -1,7 +1,8 @@
 import { ScaledRenderer } from "@/components/creator/scaled-renderer";
 import { FORMAT_PRESETS, type FormatPresetId } from "@/utils/design/presets";
 import { DESIGN_STYLES, type StyleId } from "@/utils/design/styles";
-import { exampleConfig, SHOWCASE_LINES } from "./example-config";
+import { exampleConfig } from "./example-config";
+import { PODCAST_QUOTES, type PodcastQuote } from "./podcast-quotes";
 
 /*
  * Every size, packed into one rectangle 100 units wide and ~70.97 tall.
@@ -13,14 +14,16 @@ import { exampleConfig, SHOWCASE_LINES } from "./example-config";
  *   bottom       YouTube banner (16:9), height 38.31
  */
 const H = 70.97;
-const CELLS: { format: FormatPresetId; style: StyleId; line: number; x: number; y: number; w: number; h: number }[] = [
-  { format: "x_header", style: "professional", line: 2, x: 0, y: 0, w: 42.86, h: 14.29 },
-  { format: "linkedin_header", style: "minimal", line: 3, x: 42.86, y: 0, w: 57.14, h: 14.29 },
-  { format: "story", style: "funky", line: 1, x: 0, y: 14.29, w: 31.88, h: 56.68 },
-  { format: "square", style: "cinematic", line: 2, x: 31.88, y: 14.29, w: 18.36, h: 18.36 },
-  { format: "portrait", style: "old_school", line: 0, x: 50.24, y: 14.29, w: 14.69, h: 18.36 },
-  { format: "landscape", style: "minimal", line: 0, x: 64.93, y: 14.29, w: 35.07, h: 18.36 },
-  { format: "youtube_banner", style: "old_school", line: 3, x: 31.88, y: 32.65, w: 68.12, h: 38.31 },
+// One real podcast quote per card: short lines on the wide headers, the
+// longest on the tall story.
+const CELLS: { format: FormatPresetId; style: StyleId; quote: PodcastQuote; x: number; y: number; w: number; h: number }[] = [
+  { format: "x_header", style: "professional", quote: PODCAST_QUOTES.nadella, x: 0, y: 0, w: 42.86, h: 14.29 },
+  { format: "linkedin_header", style: "minimal", quote: PODCAST_QUOTES.tao, x: 42.86, y: 0, w: 57.14, h: 14.29 },
+  { format: "story", style: "funky", quote: PODCAST_QUOTES.srinivas, x: 0, y: 14.29, w: 31.88, h: 56.68 },
+  { format: "square", style: "cinematic", quote: PODCAST_QUOTES.hassabis, x: 31.88, y: 14.29, w: 18.36, h: 18.36 },
+  { format: "portrait", style: "old_school", quote: PODCAST_QUOTES.bezos, x: 50.24, y: 14.29, w: 14.69, h: 18.36 },
+  { format: "landscape", style: "minimal", quote: PODCAST_QUOTES.pichai, x: 64.93, y: 14.29, w: 35.07, h: 18.36 },
+  { format: "youtube_banner", style: "old_school", quote: PODCAST_QUOTES.naval, x: 31.88, y: 32.65, w: 68.12, h: 38.31 },
 ];
 
 function Label({ format, style }: { format: FormatPresetId; style: StyleId }) {
@@ -47,7 +50,7 @@ export function FormatMosaic() {
             style={{ left: `${c.x}%`, top: `${(c.y / H) * 100}%`, width: `${c.w}%`, height: `${(c.h / H) * 100}%` }}
           >
             <div data-ui className="relative size-full overflow-hidden rounded-[var(--radius)]">
-              <ScaledRenderer config={exampleConfig(c.style, SHOWCASE_LINES[c.line], c.format)} />
+              <ScaledRenderer config={exampleConfig(c.style, c.quote.text, c.format, c.quote.speaker, c.quote.show)} />
               <span aria-hidden="true" className="pointer-events-none absolute inset-0 rounded-[var(--radius)] ring-1 ring-inset ring-border" />
               <Label format={c.format} style={c.style} />
             </div>
@@ -62,7 +65,7 @@ export function FormatMosaic() {
           return (
             <li key={c.format} className={p.aspectRatio > 1.5 ? "col-span-2" : undefined}>
               <div data-ui className="relative overflow-hidden rounded-[var(--radius)]" style={{ aspectRatio: `${p.width} / ${p.height}` }}>
-                <ScaledRenderer config={exampleConfig(c.style, SHOWCASE_LINES[c.line], c.format)} />
+                <ScaledRenderer config={exampleConfig(c.style, c.quote.text, c.format, c.quote.speaker, c.quote.show)} />
                 <span aria-hidden="true" className="pointer-events-none absolute inset-0 rounded-[var(--radius)] ring-1 ring-inset ring-border" />
               </div>
               <p className="mt-1.5 text-[14px]">

@@ -190,6 +190,10 @@ export function PostDetailClient({
                   <span className="text-sm font-semibold text-foreground">
                     {c.author.full_name || c.author.username}
                   </span>
+                  {/* Display names are free text; the unique @username shows who it really is. */}
+                  {c.author.full_name && c.author.username && (
+                    <span className="text-sm text-muted-foreground">@{c.author.username}</span>
+                  )}
                   <span className="text-xs text-muted-foreground">
                     {new Date(c.created_at).toLocaleDateString()}
                   </span>

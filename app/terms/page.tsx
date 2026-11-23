@@ -1,6 +1,6 @@
 // Draft generated from the codebase; have a qualified lawyer review before launch.
 import type { Metadata } from "next";
-import { ExternalLink, InternalLink, LegalPage, List, Section } from "@/components/legal/legal-page";
+import { ExternalLink, LegalPage, List, Section } from "@/components/legal/legal-page";
 
 export const metadata: Metadata = {
   title: "Terms of service",
@@ -18,8 +18,7 @@ export default function TermsPage() {
           <p>
             These terms are an agreement between you and [LEGAL ENTITY NAME], [REGISTERED ADDRESS] (&quot;we&quot;,
             &quot;us&quot;), the operator of Verbatim. By creating an account, continuing as a guest or otherwise using
-            Verbatim, you agree to these terms and to our{" "}
-            <InternalLink href="/privacy">privacy policy</InternalLink>. If you do not agree, please do not use
+            Verbatim, you agree to these terms. If you do not agree, please do not use
             Verbatim.
           </p>
         </>
@@ -65,7 +64,7 @@ export default function TermsPage() {
           <li>
             You give us a non-exclusive, worldwide, royalty-free licence to store, copy, process, display and
             distribute your content only so far as we need to run, secure and improve Verbatim. This includes sending
-            it to our service providers as described in the privacy policy, and showing published content to other
+            it to our service providers, and showing published content to other
             users. The licence ends when you delete the content or your account, except for copies we must keep by
             law.
           </li>

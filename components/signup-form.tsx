@@ -2,11 +2,11 @@
 
 import { useActionState } from "react";
 import Link from "next/link";
-import { signup, continueAsGuest } from "@/app/actions/auth";
+import { signup } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
-import { UserCircle } from "@phosphor-icons/react/dist/ssr";
+import { QuickSignIn } from "@/components/quick-sign-in";
 
 const initialState: FormState = {
   error: "",
@@ -14,8 +14,6 @@ const initialState: FormState = {
 };
 
 type FormState = { error: string; message: string };
-
-import { createClient } from "@/utils/supabase/client";
 
 export function SignupForm() {
   const [state, formAction, isPending] = useActionState(
@@ -32,38 +30,13 @@ export function SignupForm() {
     initialState
   );
 
-  const handleGoogleLogin = async () => {
-    const supabase = createClient();
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
-  };
-
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-2">
-        <Button variant="outline" className="w-full gap-2" size="lg" onClick={handleGoogleLogin} type="button">
-          Continue with Google
-        </Button>
-        <form action={continueAsGuest}>
-          <Button type="submit" variant="outline" className="w-full gap-2" size="lg">
-            <UserCircle className="size-4" />
-            Continue as guest
-          </Button>
-        </form>
-        <p className="text-base">
-          By continuing you agree to the{" "}
-          <Link href="/terms" className="underline underline-offset-4">Terms</Link> and{" "}
-          <Link href="/privacy" className="underline underline-offset-4">Privacy policy</Link>.
-        </p>
-      </div>
+    <div className="space-y-4">
+      <QuickSignIn />
 
       <p className="text-base text-muted-foreground">Or use your email</p>
 
-      <form action={formAction} className="space-y-4">
+      <form action={formAction} className="space-y-3">
         {state.error && (
           <div role="alert" className="rounded-md bg-destructive/10 p-3 text-base text-destructive">
             {state.error}
@@ -75,7 +48,7 @@ export function SignupForm() {
           </div>
         )}
         
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <label
             htmlFor="name"
             className="text-base font-medium text-foreground"
@@ -92,7 +65,7 @@ export function SignupForm() {
           />
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <label
             htmlFor="email"
             className="text-base font-medium text-foreground"
@@ -109,13 +82,18 @@ export function SignupForm() {
           />
         </div>
 
-        <div className="space-y-2">
-          <label
-            htmlFor="password"
-            className="text-base font-medium text-foreground"
-          >
-            Password
-          </label>
+        <div className="space-y-1.5">
+          <div className="flex items-baseline justify-between gap-3">
+            <label
+              htmlFor="password"
+              className="text-base font-medium text-foreground"
+            >
+              Password
+            </label>
+            <span id="password-hint" className="text-sm text-muted-foreground">
+              At least 8 characters
+            </span>
+          </div>
           <PasswordInput
             id="password"
             name="password"
@@ -124,9 +102,6 @@ export function SignupForm() {
             minLength={8}
             aria-describedby="password-hint"
           />
-          <p id="password-hint" className="text-sm text-muted-foreground">
-            At least 8 characters.
-          </p>
         </div>
 
         <div className="flex items-start gap-3">
@@ -139,12 +114,11 @@ export function SignupForm() {
           />
           <label htmlFor="consent" className="text-base">
             I am 18 or older and agree to the{" "}
-            <Link href="/terms" className="underline underline-offset-4">Terms</Link> and{" "}
-            <Link href="/privacy" className="underline underline-offset-4">Privacy policy</Link>
+            <Link href="/terms" className="underline underline-offset-4">Terms</Link>
           </label>
         </div>
 
-        <Button type="submit" className="w-full" size="lg" disabled={isPending}>
+        <Button type="submit" className="mt-2 w-full" size="lg" disabled={isPending}>
           {isPending ? "Creating account…" : "Create account"}
         </Button>
       </form>

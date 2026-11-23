@@ -29,11 +29,11 @@ export function DesignTry() {
       {/* Controls */}
       <div className="relative flex flex-col bg-ink px-5 pb-40 pt-20 text-paper lg:min-h-[92svh] lg:px-[8%] lg:pt-28">
         <h2 id={`${id}-title`} className="sr-only">
-          Pick a design: try it on the example interview
+          Try a design
         </h2>
 
         <fieldset>
-          <legend className="text-[15px] font-medium text-paper/80">A line from the example interview</legend>
+          <legend className="text-[15px] font-medium text-paper/80">Pick a line</legend>
           <div className="mt-4 grid gap-3">
             {LINES.map((text, i) => {
               const on = line === i;

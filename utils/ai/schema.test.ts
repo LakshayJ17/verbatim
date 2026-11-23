@@ -108,3 +108,17 @@ describe("pricing", () => {
     expect(estimateCostUsd("gemini-2.5-flash", { promptTokens: 1_000_000, outputTokens: 1_000_000, thoughtsTokens: 0 })).toBe(2);
   });
 });
+
+describe("answers without importantMoments", () => {
+  it("parse, with an empty list (the model is no longer asked for them)", () => {
+    const parsed = AnalysisResultSchema.parse({
+      summary: "A short talk about running.",
+      insights: [],
+      quotes: [{ text: "Showing up tired still counts as showing up.", startTimestamp: 415, whyItMatters: "True.", confidence: 0.9 }],
+      topics: ["running"],
+      captionSuggestions: [],
+    });
+    expect(parsed.importantMoments).toEqual([]);
+    expect(parsed.quotes).toHaveLength(1);
+  });
+});

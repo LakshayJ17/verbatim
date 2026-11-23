@@ -6,6 +6,7 @@ import { headers } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
 import { z } from "zod";
 import { ensureProfile } from "@/utils/auth/profile";
+import { consumeNetworkLimit } from "@/utils/rate-limit";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -25,6 +26,17 @@ type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
  * someone else, so a previous account can never carry over. "local" only
  * clears this browser's cookies; the other account stays signed in elsewhere.
  */
+/**
+ * Where links in auth emails point. The configured site address wins, so the
+ * link never depends on a request header; the Origin header is only a
+ * fallback for local setups without NEXT_PUBLIC_SITE_URL.
+ */
+async function siteOrigin(): Promise<string> {
+  const configured = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, "");
+  if (configured) return configured;
+  return (await headers()).get("origin") || "http://localhost:3000";
+}
+
 async function clearExistingSession(supabase: SupabaseServerClient) {
   try {
     await supabase.auth.signOut({ scope: "local" });
@@ -46,6 +58,12 @@ export async function login(formData: FormData) {
   }
 
   const data = parsed.data;
+
+  // Slows password guessing from one network; Supabase's own limit only sees
+  // this server's address.
+  if (!(await consumeNetworkLimit("login"))) {
+    return { error: "Too many sign-in attempts. Please wait a few minutes and try again." };
+  }
 
   await clearExistingSession(supabase);
   const { data: signedIn, error } = await supabase.auth.signInWithPassword(data);
@@ -80,7 +98,10 @@ export async function signup(formData: FormData) {
   }
 
   const { email, password, name } = parsed.data;
-  const origin = (await headers()).get("origin") || process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  if (!(await consumeNetworkLimit("signup"))) {
+    return { error: "Too many sign-ups from this network. Please try again later." };
+  }
+  const origin = await siteOrigin();
 
   await clearExistingSession(supabase);
 
@@ -97,17 +118,14 @@ export async function signup(formData: FormData) {
     return { error: error.message };
   }
 
-  // With email confirmation on, Supabase returns a user with no identities
-  // (and no error) when the email is already registered.
-  if (signUpData.user && signUpData.user.identities?.length === 0) {
-    return { error: "An account with this email already exists. Sign in instead." };
-  }
-
-  // Email confirmation is on: the account exists but is not signed in yet.
-  // The profile is created in /auth/callback after the link is clicked.
+  // Email confirmation is on, so there is no session yet. Supabase also
+  // answers this way (a user with no identities) when the email is already
+  // registered; both cases get the same reply so the form can't be used to
+  // find out which emails have accounts. The profile is created in
+  // /auth/callback after the link is clicked.
   if (!signUpData.session) {
     return {
-      message: `We sent a confirmation link to ${email}. Open it to finish creating your account, then you will be signed in.`,
+      message: `Check ${email} for a confirmation link to finish creating your account. Already have an account with this email? Sign in instead.`,
     };
   }
 
@@ -131,7 +149,7 @@ export async function resendConfirmation(email: string) {
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
   const supabase = await createClient();
-  const origin = (await headers()).get("origin") || process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  const origin = await siteOrigin();
   const { error } = await supabase.auth.resend({
     type: "signup",
     email: parsed.data.email,
@@ -151,37 +169,30 @@ export async function logout() {
   redirect("/login");
 }
 
-export async function signInWithGoogle() {
-  const supabase = await createClient();
-  const origin = (await headers()).get("origin") || process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: {
-      redirectTo: `${origin}/auth/callback`,
-    },
-  });
-
-  if (error) {
-    redirect(`/login?error=${encodeURIComponent(error.message)}`);
-  }
-
-  if (data.url) {
-    redirect(data.url);
-  }
-}
-
 export async function continueAsGuest() {
   const supabase = await createClient();
+
+  // Already a guest in this browser: keep that session rather than creating
+  // another anonymous account on every click.
+  const {
+    data: { user: current },
+  } = await supabase.auth.getUser();
+  if (current?.is_anonymous) {
+    revalidatePath("/", "layout");
+    redirect("/dashboard");
+  }
+
+  // Every guest is a real account, so cap how many one network can create.
+  if (!(await consumeNetworkLimit("guest_create"))) {
+    redirect("/login?error=guest_limit");
+  }
+
   await clearExistingSession(supabase);
   const { data, error } = await supabase.auth.signInAnonymously();
 
   if (error) {
-    let errorMessage = error.message;
-    if (errorMessage.includes("Anonymous sign-ins are disabled")) {
-      errorMessage = "Guest access is currently unavailable. Please sign in with Google or create an account.";
-    }
-    redirect(`/login?error=${encodeURIComponent(errorMessage)}`);
+    console.error("[auth] guest sign-in failed:", error.message);
+    redirect("/login?error=guest_unavailable");
   }
 
   if (data?.user) {

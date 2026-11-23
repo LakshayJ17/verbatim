@@ -26,10 +26,17 @@ function normalizeForComparison(text: string): string {
   // accents) and digits in every script, and drops punctuation. The old
   // ASCII-only \w pattern erased whole Hindi, Arabic or Chinese quotes,
   // which then "matched" any transcript.
+  //
+  // Two kinds of punctuation change meaning, so they are kept: apostrophes
+  // ("we're" is not "were") and separators between digits ("1.5" is not
+  // "15"). Curly and straight apostrophes count as the same.
   return text
     .normalize("NFC")
     .toLowerCase()
-    .replace(/[^\p{L}\p{M}\p{N}\s]/gu, "")
+    .replace(/[\u2018\u2019\u02bc`\u00b4]/g, "'")
+    .replace(/(\d)[.,](?=\d)/g, "$1\u00b7")
+    .replace(/[^\p{L}\p{M}\p{N}\s'\u00b7]/gu, "")
+    .replace(/(^|\s)'+|'+(?=\s|$)/g, "$1")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -107,6 +114,21 @@ export function verifyQuote(
   if (!normCandidate) {
     return { ...candidate, verificationStatus: "rejected" };
   }
+  // Emoji, circled letters and other symbols are ignored when comparing but
+  // shown to readers, so a quote carrying them can't be called word for word.
+  const best = verifyNormalized(candidate, normCandidate, segments);
+  return best.verificationStatus === "verified" && SHOWN_BUT_NOT_COMPARED.test(candidate.text)
+    ? { ...best, verificationStatus: "needs_review" }
+    : best;
+}
+
+const SHOWN_BUT_NOT_COMPARED = /[\p{So}\p{Co}\p{Cn}]/u;
+
+function verifyNormalized(
+  candidate: QuoteExtraction,
+  normCandidate: string,
+  segments: NormalizedSegment[]
+): VerifiedQuote {
 
   const index = getIndex(segments);
   const candidateWords = normCandidate.split(" ");

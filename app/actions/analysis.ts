@@ -19,7 +19,7 @@ import type { AnalysisResult } from "@/utils/ai/schema";
 import { AnalysisResultSchema } from "@/utils/ai/schema";
 import { verifyQuotes, markAsSourceDerived, countByStatus, type VerifiedQuote } from "@/utils/ai/verification";
 import { detectInjectionSignals, sanitizeAnalysisOutput } from "@/utils/ai/safety";
-import { transcriptCallCostUsd } from "@/utils/ai/pricing";
+import { estimateCostUsd, transcriptCallCostUsd } from "@/utils/ai/pricing";
 import type { NormalizedSegment } from "@/utils/parsers";
 import { acquireAndStoreTranscript, readSegments } from "@/utils/transcript/store";
 import { consumeRateLimit } from "@/utils/rate-limit";
@@ -31,6 +31,10 @@ import { debugRun } from "@/utils/debug";
 const MAX_CONTENT_DURATION_SECONDS = Number.parseInt(process.env.MAX_CONTENT_DURATION_SECONDS || "7200", 10);
 /** Whole action budget; the pages that call this export maxDuration = 300. */
 const ACTION_BUDGET_MS = 285_000;
+/** Analyses running at once across everyone (passed to claim_analysis). */
+const MAX_CONCURRENT_ANALYSES = Math.max(1, Number.parseInt(process.env.AI_MAX_CONCURRENT_ANALYSES || "5", 10) || 5);
+/** Rough Gemini input rate for a video at low resolution: frames plus audio, per second. */
+const VIDEO_TOKENS_PER_SECOND = { frames: 66, audio: 32 };
 /** How long a late transcript fetch may hold up the analysis. */
 const LATE_TRANSCRIPT_WAIT_MS = 45_000;
 const CACHE_TTL_DAYS = Number.parseInt(process.env.AI_CACHE_TTL_DAYS ?? "30", 10);
@@ -57,12 +61,25 @@ async function claimAnalysis(
   sourceId: string,
   existing: { id: string; status: string } | undefined
 ): Promise<Claim> {
-  const { data, error } = await supabase.rpc("claim_analysis", {
+  let { data, error } = await supabase.rpc("claim_analysis", {
     p_source_id: sourceId,
     p_stale_seconds: 600,
+    p_max_running: MAX_CONCURRENT_ANALYSES,
   });
+  // Before the 20261123100000 migration the function has no p_max_running.
+  if (error?.code === "PGRST202") {
+    ({ data, error } = await supabase.rpc("claim_analysis", { p_source_id: sourceId, p_stale_seconds: 600 }));
+  }
   if (!error) {
     return data ? { analysisId: data as string } : { busy: true };
+  }
+  // One run per account at a time, and a cap across everyone, so parallel
+  // runs can't all slip under the daily spending cap (20261123100000 migration).
+  if (error.message?.includes("ANALYSIS_IN_PROGRESS")) {
+    return { error: "Another of your videos is being analyzed. Try this one when it finishes." };
+  }
+  if (error.message?.includes("ANALYSIS_BUSY")) {
+    return { error: "Verbatim is analyzing a lot of videos right now. Please try again in a few minutes." };
   }
   if (error.code !== "PGRST202" && error.code !== "42883") {
     console.error("[analysis] claim_analysis failed:", error.message);
@@ -271,10 +288,15 @@ export async function analyzeYouTubeSource(sourceId: string): Promise<AnalyzeRes
   // Defence in depth: the URL must still be the YouTube video that passed
   // preflight, and within the length limit, before anything is spent on it.
   const parsedUrl = parseYouTubeUrl(source.source_url);
-  if (parsedUrl.type !== "video" || !parsedUrl.id || (source.external_id && parsedUrl.id !== source.external_id)) {
+  // A missing video id or length is refused rather than trusted: the id keys
+  // the shared caches, and the length is what keeps cost bounded.
+  if (parsedUrl.type !== "video" || !parsedUrl.id || !source.external_id || parsedUrl.id !== source.external_id) {
     return { error: "This source's link is not a supported YouTube video." };
   }
-  if (typeof source.duration_seconds === "number" && source.duration_seconds > MAX_CONTENT_DURATION_SECONDS) {
+  if (typeof source.duration_seconds !== "number" || source.duration_seconds <= 0) {
+    return { error: "We couldn't confirm this video's length. Please add it again." };
+  }
+  if (source.duration_seconds > MAX_CONTENT_DURATION_SECONDS) {
     return { error: "This video is longer than Verbatim supports." };
   }
 
@@ -417,11 +439,31 @@ export async function analyzeYouTubeSource(sourceId: string): Promise<AnalyzeRes
       .update({ status: "failed", updated_at: new Date().toISOString() })
       .eq("id", analysisId);
 
+    // A video call stopped before Gemini reported usage is still billed for the
+    // video it read; record an estimate so the spending caps can see it.
+    let failedUsage = error instanceof AIProviderError ? (error.usage ?? null) : usage;
+    if (!failedUsage && error instanceof AIProviderError && mode === "video" && typeof source.duration_seconds === "number") {
+      const promptTokens = Math.round(source.duration_seconds * (VIDEO_TOKENS_PER_SECOND.frames + VIDEO_TOKENS_PER_SECOND.audio));
+      const audioPromptTokens = Math.round(source.duration_seconds * VIDEO_TOKENS_PER_SECOND.audio);
+      failedUsage = {
+        model,
+        mode,
+        promptTokens,
+        audioPromptTokens,
+        cachedTokens: 0,
+        outputTokens: 0,
+        thoughtsTokens: 0,
+        totalTokens: promptTokens,
+        costUsd: estimateCostUsd(model, { promptTokens, audioPromptTokens, cachedTokens: 0, outputTokens: 0, thoughtsTokens: 0 }),
+        durationMs: Date.now() - startedAt,
+        finishReason: "ESTIMATED",
+      };
+    }
     await recordAIUsage({
       userId: user.id,
       sourceId,
       analysisId,
-      usage: error instanceof AIProviderError ? (error.usage ?? null) : usage,
+      usage: failedUsage,
       mode,
       model,
       status: "error",

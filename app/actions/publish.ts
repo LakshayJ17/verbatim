@@ -3,6 +3,9 @@
 import { z } from "zod";
 import { randomUUID } from "node:crypto";
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
+import { FORMAT_PRESETS, type FormatPresetId } from "@/utils/design/presets";
+import { pngSize } from "@/utils/design/png";
 import { consumeRateLimit } from "@/utils/rate-limit";
 import { revalidatePath } from "next/cache";
 import { track } from "@/utils/analytics/track";
@@ -37,7 +40,7 @@ async function getMember() {
 async function getOwnedDesign(supabase: Supabase, designId: string, userId: string) {
   const { data } = await supabase
     .from("designs")
-    .select("id, user_id, quote_id, insight_id, rendered_image_url")
+    .select("id, user_id, quote_id, insight_id, rendered_image_url, configuration")
     .eq("id", designId)
     .eq("user_id", userId)
     .maybeSingle();
@@ -109,8 +112,10 @@ export async function preparePublication(designId: string) {
 
   const path = buildGraphicPath(user.id, design.id, randomUUID());
 
-  const { data: signedUpload, error: signedError } = await supabase.storage
-    .from(GRAPHICS_BUCKET)
+  // Issued with the service role: browsers have no upload rights of their
+  // own on this bucket (20261123100000 migration), only this one-time URL.
+  const { data: signedUpload, error: signedError } = await createAdminClient()
+    .storage.from(GRAPHICS_BUCKET)
     .createSignedUploadUrl(path, { upsert: false });
 
   if (signedError || !signedUpload) {
@@ -145,23 +150,26 @@ export async function finalizePublication(designId: string, path: string, visibi
   const blocked = await publishBlockReason(supabase, design, user.id);
   if (blocked) return { error: blocked };
 
-  // The object must exist, be a PNG and be within the size limit.
-  const fileName = input.data.path.slice(input.data.path.lastIndexOf("/") + 1);
-  const { data: listed, error: listError } = await supabase.storage
-    .from(GRAPHICS_BUCKET)
-    .list(`posts/${user.id}`, { search: fileName, limit: 5 });
-  const object = listed?.find((f) => f.name === fileName);
-  if (listError || !object) return { error: "The image upload did not finish. Try again." };
-  const meta = (object.metadata ?? {}) as { mimetype?: string; size?: number };
-  if ((meta.mimetype && meta.mimetype !== "image/png") || (typeof meta.size === "number" && meta.size > MAX_GRAPHIC_BYTES)) {
-    await supabase.storage.from(GRAPHICS_BUCKET).remove([input.data.path]);
+  // The upload must be a real PNG (checked from its bytes, not the declared
+  // type) of exactly this design's size, within the size limit. The image
+  // itself is still drawn in the browser, so this can't prove what it says;
+  // reports and moderation cover that.
+  const admin = createAdminClient();
+  const { data: file, error: downloadError } = await admin.storage.from(GRAPHICS_BUCKET).download(input.data.path);
+  if (downloadError || !file) return { error: "The image upload did not finish. Try again." };
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const size = pngSize(bytes);
+  const preset = FORMAT_PRESETS[((design.configuration ?? {}) as { format?: FormatPresetId }).format ?? "square"];
+  if (bytes.length > MAX_GRAPHIC_BYTES || !size || !preset || size.width !== preset.width || size.height !== preset.height) {
+    await admin.storage.from(GRAPHICS_BUCKET).remove([input.data.path]);
     return { error: "The uploaded image was not accepted." };
   }
 
-  const imageUrl = supabase.storage.from(GRAPHICS_BUCKET).getPublicUrl(input.data.path).data.publicUrl;
+  const imageUrl = admin.storage.from(GRAPHICS_BUCKET).getPublicUrl(input.data.path).data.publicUrl;
   const previousUrl = design.rendered_image_url;
 
-  const { error: designError } = await supabase
+  // Only the server sets this column (browsers lost UPDATE on designs).
+  const { error: designError } = await admin
     .from("designs")
     .update({ rendered_image_url: imageUrl })
     .eq("id", design.id)
@@ -250,7 +258,7 @@ export async function unpublishDesign(designId: string) {
 
   await removeOwnedGraphic(supabase, design.rendered_image_url, user.id);
   if (design.rendered_image_url) {
-    await supabase.from("designs").update({ rendered_image_url: null }).eq("id", design.id).eq("user_id", user.id);
+    await createAdminClient().from("designs").update({ rendered_image_url: null }).eq("id", design.id).eq("user_id", user.id);
   }
 
   track(user.id, "post_unpublished", { post_id: post?.id ?? null, design_id: design.id });
@@ -279,7 +287,7 @@ export async function deletePost(postId: string) {
   const design = await getOwnedDesign(supabase, post.design_id, user.id);
   if (design?.rendered_image_url) {
     await removeOwnedGraphic(supabase, design.rendered_image_url, user.id);
-    await supabase.from("designs").update({ rendered_image_url: null }).eq("id", design.id).eq("user_id", user.id);
+    await createAdminClient().from("designs").update({ rendered_image_url: null }).eq("id", design.id).eq("user_id", user.id);
   }
 
   revalidateSharing(user.id, post.id);

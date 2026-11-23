@@ -1,9 +1,12 @@
 "use server";
 
 import { z } from "zod";
-import { headers } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
-import { consumeRateLimit, consumeAnonymousLimit, RATE_LIMITS } from "@/utils/rate-limit";
+import { createAdminClient } from "@/utils/supabase/admin";
+import { consumeRateLimit, consumeNetworkLimit, RATE_LIMITS } from "@/utils/rate-limit";
+
+/** Owner notification emails per hour, across everyone, so a flood can't empty the inbox or the Resend quota. */
+const MAX_EMAILS_PER_HOUR = 10;
 
 const FeedbackSchema = z.object({
   message: z.string().trim().min(5, "Please write at least a few words.").max(2000, "Please keep it under 2,000 characters."),
@@ -44,22 +47,24 @@ export async function sendFeedback(_prev: FeedbackState, formData: FormData): Pr
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Signed-in users: database limiter. Everyone else: best-effort per-IP limit.
-  if (user) {
+  // Members: per-account limit. Visitors and guests (who can make new guest
+  // accounts at will): per-network limit.
+  const member = user && !user.is_anonymous;
+  if (member) {
     const limit = await consumeRateLimit(supabase, "feedback");
     if (!limit.ok) return { ok: false, error: limit.error };
-  } else {
-    const ip = ((await headers()).get("x-forwarded-for") ?? "unknown").split(",")[0].trim();
-    if (!consumeAnonymousLimit(`feedback:${ip}`)) {
-      return { ok: false, error: RATE_LIMITS.feedback.message };
-    }
+  } else if (!(await consumeNetworkLimit("feedback_visitor"))) {
+    return { ok: false, error: RATE_LIMITS.feedback.message };
   }
 
-  const { error } = await supabase.from("feedback").insert({
+  // Written with the service role after the checks above: browsers can't
+  // insert feedback directly (see the 20261123100000 migration).
+  const admin = createAdminClient();
+  const { error } = await admin.from("feedback").insert({
     message,
     email: email ?? null,
     page: page ?? null,
-    user_id: user && !user.is_anonymous ? user.id : null,
+    user_id: member ? user.id : null,
   });
   if (error) {
     console.error("[feedback] insert failed:", error.message);
@@ -68,7 +73,11 @@ export async function sendFeedback(_prev: FeedbackState, formData: FormData): Pr
 
   const apiKey = process.env.RESEND_API_KEY;
   const to = process.env.FEEDBACK_TO_EMAIL;
-  if (apiKey && to) {
+  const { count: lastHour } = await admin
+    .from("feedback")
+    .select("id", { count: "exact", head: true })
+    .gte("created_at", new Date(Date.now() - 3_600_000).toISOString());
+  if (apiKey && to && (lastHour ?? 0) <= MAX_EMAILS_PER_HOUR) {
     try {
       const res = await fetch("https://api.resend.com/emails", {
         method: "POST",

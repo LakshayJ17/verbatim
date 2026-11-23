@@ -19,20 +19,15 @@ export async function generateMetadata({
   const { username } = await params;
   const supabase = await createClient();
 
-  // Same lookup as the page (username, then id) but with plain .eq() filters
-  // so the route param is never interpolated into a PostgREST filter string.
-  let { data: profile } = await supabase
+  // Same lookup as the page, with plain .eq() filters so the route param is
+  // never interpolated into a PostgREST filter string.
+  // A UUID is looked up as an id only, so nobody can claim another user's
+  // /profile/<id> address by choosing that UUID as their username.
+  const { data: profile } = await supabase
     .from("profiles")
     .select("username, full_name, bio")
-    .eq("username", username)
+    .eq(UUID_RE.test(username) ? "id" : "username", UUID_RE.test(username) ? username : username.toLowerCase())
     .maybeSingle();
-  if (!profile && UUID_RE.test(username)) {
-    ({ data: profile } = await supabase
-      .from("profiles")
-      .select("username, full_name, bio")
-      .eq("id", username)
-      .maybeSingle());
-  }
 
   if (!profile) {
     return { title: "Profile", robots: { index: false, follow: false } };
@@ -71,13 +66,12 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Find the profile by username, then by id. Plain .eq() filters keep the
-  // route param from being interpreted as PostgREST filter syntax.
-  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  let { data: profile } = await supabase.from("profiles").select("*").eq("username", username).maybeSingle();
-  if (!profile && UUID_RE.test(username)) {
-    ({ data: profile } = await supabase.from("profiles").select("*").eq("id", username).maybeSingle());
-  }
+  // Plain .eq() filters keep the route param from being read as PostgREST
+  // filter syntax. A UUID is looked up as an id only, so nobody can claim another user's
+  // /profile/<id> address by choosing that UUID as their username.
+  const { data: profile } = UUID_RE.test(username)
+    ? await supabase.from("profiles").select("*").eq("id", username).maybeSingle()
+    : await supabase.from("profiles").select("*").eq("username", username.toLowerCase()).maybeSingle();
 
   if (!profile) {
     return notFound();

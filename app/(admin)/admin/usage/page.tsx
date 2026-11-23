@@ -63,6 +63,7 @@ const ERROR_LABELS: Record<string, string> = {
   SAFETY: "Blocked by AI safety filters",
   RECITATION: "AI refused to reproduce passages",
   TRUNCATED: "Answer cut off (output cap)",
+  LOOPING: "Model repeated itself (stopped early)",
   INVALID_JSON: "Answer not valid JSON",
   SCHEMA: "Answer missing required fields",
   EMPTY: "Empty answer",

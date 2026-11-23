@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
+import { consumeRateLimit } from "@/utils/rate-limit";
 import { parseYouTubeUrl } from "@/utils/source/normalization";
 import { getYouTubeMetadata, YouTubeMetadataError } from "@/utils/source/youtube";
 import { filterValidCategories, SourceCategory } from "@/utils/source/categories";
@@ -77,6 +78,17 @@ export async function preflightSource(inputUrl: string): Promise<PreflightResult
   }
 
   const externalId = parsed.id;
+  // YouTube ids are exactly 11 of these characters; anything else would only
+  // waste a Data API call.
+  if (!/^[A-Za-z0-9_-]{11}$/.test(externalId)) {
+    return { isValid: false, errorMessage: "That doesn't look like a YouTube video link.", nextAction: 'try_another' };
+  }
+  // Each check spends the shared YouTube Data API quota, so it is limited per
+  // account; otherwise one script could use up the day's quota for everyone.
+  const preflightLimit = await consumeRateLimit(supabase, "preflight");
+  if (!preflightLimit.ok) {
+    return { isValid: false, errorMessage: preflightLimit.error, nextAction: 'try_another' };
+  }
 
   // ── 2. Duplicate check (DB lookup before any external API call) ───────────
   const { data: existing } = await supabase

@@ -1,6 +1,6 @@
 // Draft generated from the codebase; have a qualified lawyer review before launch.
 import type { Metadata } from "next";
-import { InternalLink, LegalPage, List, Section } from "@/components/legal/legal-page";
+import { LegalPage, List, Section } from "@/components/legal/legal-page";
 
 export const metadata: Metadata = {
   title: "Cookie policy",
@@ -118,7 +118,6 @@ export default function CookiesPage() {
           for your consent before setting it.
         </p>
         <p>
-          For more about how we handle your data, see our <InternalLink href="/privacy">privacy policy</InternalLink>.
           Questions: [CONTACT EMAIL].
         </p>
       </Section>

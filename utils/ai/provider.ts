@@ -3,6 +3,7 @@ import { GoogleGenAI, MediaResolution, Type, type Schema, type ThinkingConfig, T
 import { AnalysisResult, AnalysisResultSchema, MAX_INSIGHTS, MAX_QUOTES, parseModelJson } from "./schema";
 import { sanitizeAnalysisOutput } from "./safety";
 import { formatTranscriptForPrompt, metadataBlock } from "./prompt-format";
+import { endsInLoop } from "./loop-guard";
 import { estimateCostUsd } from "./pricing";
 import type { NormalizedSegment } from "@/utils/parsers";
 import type { AnalysisContext } from "./prompt-format";
@@ -88,6 +89,7 @@ export type AIErrorCode =
   | "SAFETY"
   | "RECITATION"
   | "TRUNCATED"
+  | "LOOPING"
   | "INVALID_JSON"
   | "SCHEMA"
   | "EMPTY"
@@ -103,6 +105,7 @@ const USER_MESSAGES: Record<AIErrorCode, string> = {
   SAFETY: "This video could not be analyzed because it was flagged by the AI safety filters.",
   RECITATION: "The AI declined to reproduce long passages from this video. Please try again.",
   TRUNCATED: "The analysis answer was cut off. Please try again.",
+  LOOPING: "The analysis got stuck repeating itself. Please try again.",
   INVALID_JSON: "The analysis came back in an unexpected format. Please try again.",
   SCHEMA: "The analysis came back incomplete. Please try again.",
   EMPTY: "The analysis came back empty. Please try again.",
@@ -150,7 +153,6 @@ EXTRACTION RULES:
 - insights: the key ideas, each with a short title, a 1 to 3 sentence explanation, a one-word category, importanceScore 1 to 10, and sourceSegments (start times in seconds that support it).
 - summary: 3 to 6 sentences, neutral and factual.
 - topics: up to 8 short topic names.
-- importantMoments: up to 8 moments worth returning to, with start time and reason.
 - captionSuggestions: up to 5 short social captions with no hashtags spam, links or emojis spam.
 - For a long conversation aim for 5 to 10 insights and 8 to 15 quotes; short content may have fewer. Never pad with weak or invented items. Do not invent content that is not present.`;
 
@@ -158,6 +160,10 @@ EXTRACTION RULES:
 // Response schema (Gemini structured output)
 // ---------------------------------------------------------------------------
 
+// Timestamps are whole seconds (the transcript is written that way) and every
+// list has a cap: an open-ended number or list is where Gemini 3 tends to loop.
+// "importantMoments" is no longer asked for: nothing shows it, and its
+// timestamps (written after a long "reason") were where the loops happened.
 const RESPONSE_SCHEMA: Schema = {
   type: Type.OBJECT,
   properties: {
@@ -172,7 +178,7 @@ const RESPONSE_SCHEMA: Schema = {
           explanation: { type: Type.STRING },
           category: { type: Type.STRING },
           importanceScore: { type: Type.INTEGER, minimum: 1, maximum: 10 },
-          sourceSegments: { type: Type.ARRAY, items: { type: Type.NUMBER } },
+          sourceSegments: { type: Type.ARRAY, maxItems: "6", items: { type: Type.INTEGER } },
         },
         required: ["title", "explanation", "category", "importanceScore", "sourceSegments"],
         propertyOrdering: ["title", "explanation", "category", "importanceScore", "sourceSegments"],
@@ -186,8 +192,8 @@ const RESPONSE_SCHEMA: Schema = {
         properties: {
           text: { type: Type.STRING },
           speaker: { type: Type.STRING },
-          startTimestamp: { type: Type.NUMBER },
-          endTimestamp: { type: Type.NUMBER },
+          startTimestamp: { type: Type.INTEGER },
+          endTimestamp: { type: Type.INTEGER },
           whyItMatters: { type: Type.STRING },
           confidence: { type: Type.NUMBER, minimum: 0, maximum: 1 },
         },
@@ -196,24 +202,10 @@ const RESPONSE_SCHEMA: Schema = {
       },
     },
     topics: { type: Type.ARRAY, maxItems: "8", items: { type: Type.STRING } },
-    importantMoments: {
-      type: Type.ARRAY,
-      maxItems: "8",
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          title: { type: Type.STRING },
-          startTimestamp: { type: Type.NUMBER },
-          endTimestamp: { type: Type.NUMBER },
-          reason: { type: Type.STRING },
-        },
-        required: ["title", "reason"],
-      },
-    },
     captionSuggestions: { type: Type.ARRAY, maxItems: "5", items: { type: Type.STRING } },
   },
-  required: ["summary", "insights", "quotes", "topics", "importantMoments", "captionSuggestions"],
-  propertyOrdering: ["summary", "insights", "quotes", "topics", "importantMoments", "captionSuggestions"],
+  required: ["summary", "insights", "quotes", "topics", "captionSuggestions"],
+  propertyOrdering: ["summary", "insights", "quotes", "topics", "captionSuggestions"],
 };
 
 // ---------------------------------------------------------------------------
@@ -289,6 +281,27 @@ function toUsage(model: string, mode: AnalysisMode, meta: UsageMetadataLike | un
   };
 }
 
+/** Adds up two calls' tokens and cost, so a retried call is tracked and billed in full. */
+function addUsage(a: CallUsage | undefined, b: CallUsage | undefined): CallUsage | undefined {
+  if (!a) return b;
+  if (!b) return a;
+  return {
+    ...b,
+    promptTokens: a.promptTokens + b.promptTokens,
+    audioPromptTokens: a.audioPromptTokens + b.audioPromptTokens,
+    cachedTokens: a.cachedTokens + b.cachedTokens,
+    outputTokens: a.outputTokens + b.outputTokens,
+    thoughtsTokens: a.thoughtsTokens + b.thoughtsTokens,
+    totalTokens: a.totalTokens + b.totalTokens,
+    costUsd: a.costUsd + b.costUsd,
+    durationMs: a.durationMs + b.durationMs,
+  };
+}
+
+function withUsage(e: AIProviderError, usage: CallUsage | undefined): AIProviderError {
+  return usage === e.usage ? e : new AIProviderError(e.code, e.message, usage);
+}
+
 export class GeminiProvider {
   private ai: GoogleGenAI;
   readonly modelName: string;
@@ -338,21 +351,28 @@ export class GeminiProvider {
     const deadline = Date.now() + Math.min(AI_TIMEOUT_MS, opts.timeoutMs ?? AI_TIMEOUT_MS);
     const models = [this.modelName, ...fallbackModels(this.modelName)];
     let lastError: AIProviderError | undefined;
+    // Tokens spent on failed attempts, added to whatever is returned or thrown.
+    let spent: CallUsage | undefined;
     for (const model of models) {
-      // Overload (503) is usually brief: one retry on the same model first.
+      // One retry on the same model first, for problems that are usually
+      // one-off: a brief overload (503), or an answer that looped or was cut
+      // off (the same transcript worked on the next try in testing).
       for (let attempt = 0; attempt < 2; attempt++) {
         const remaining = deadline - Date.now();
         if (remaining < 15_000) break;
         try {
-          return await this.generateOnce(model, parts, mode, ctx, remaining);
+          const out = await this.generateOnce(model, parts, mode, ctx, remaining);
+          return spent ? { ...out, usage: addUsage(spent, out.usage) ?? out.usage } : out;
         } catch (e) {
           if (!(e instanceof AIProviderError)) throw e;
           lastError = e;
-          if (e.code === "OVERLOADED" && attempt === 0) {
-            await new Promise((r) => setTimeout(r, 2_000 + Math.random() * 2_000));
+          spent = addUsage(spent, e.usage);
+          if (attempt === 0 && (e.code === "OVERLOADED" || e.code === "LOOPING" || e.code === "TRUNCATED")) {
+            if (e.code === "OVERLOADED") await new Promise((r) => setTimeout(r, 2_000 + Math.random() * 2_000));
+            else console.warn(`[ai] model "${model}" answer ${e.code === "LOOPING" ? "looped" : "was cut off"}; retrying once.`);
             continue;
           }
-          if (e.code !== "MODEL_UNAVAILABLE" && e.code !== "NO_RESPONSE" && e.code !== "OVERLOADED") throw e;
+          if (e.code !== "MODEL_UNAVAILABLE" && e.code !== "NO_RESPONSE" && e.code !== "OVERLOADED") throw withUsage(e, spent);
           console.error(
             `[ai] model "${model}" failed (${e.code}): ${e.message.slice(0, 200)}. ` +
               "Check AI_MODEL / AI_FALLBACK_MODELS (node --env-file=.env.local scripts/check-ai.mjs)."
@@ -361,7 +381,7 @@ export class GeminiProvider {
         }
       }
     }
-    throw lastError ?? new AIProviderError("TIMEOUT", "No time left to call the model.");
+    throw lastError ? withUsage(lastError, spent) : new AIProviderError("TIMEOUT", "No time left to call the model.");
   }
 
   private async generateOnce(
@@ -378,7 +398,18 @@ export class GeminiProvider {
     let finishReason: string | undefined;
     let jsonText = "";
     let gotChunk = false;
+    let looped = false;
+    let checkedLength = 0;
     const watchdog = new AbortController();
+    // The stream is stopped as soon as a loop shows, often before Gemini has
+    // reported output tokens; estimate them from the text so cost is tracked.
+    const loopError = () => {
+      const counted = toUsage(model, mode, meta, startedAt, "LOOP");
+      const usage = counted.outputTokens > 0
+        ? counted
+        : toUsage(model, mode, { ...meta, candidatesTokenCount: Math.ceil(jsonText.length / 2) }, startedAt, "LOOP");
+      return new AIProviderError("LOOPING", `Model repeated itself; stopped after ${jsonText.length} chars`, usage);
+    };
     const watchdogTimer =
       mode === "transcript" && AI_FIRST_CHUNK_TIMEOUT_MS < timeoutMs
         ? setTimeout(() => {
@@ -415,8 +446,18 @@ export class GeminiProvider {
         if (chunk.usageMetadata) meta = chunk.usageMetadata as UsageMetadataLike;
         const reason = chunk.candidates?.[0]?.finishReason;
         if (reason) finishReason = String(reason);
+        // Stuck repeating itself: stop now instead of paying up to the cap.
+        if (jsonText.length - checkedLength >= 200) {
+          checkedLength = jsonText.length;
+          if (endsInLoop(jsonText)) {
+            looped = true;
+            watchdog.abort();
+            break;
+          }
+        }
       }
     } catch (error: unknown) {
+      if (looped) throw loopError();
       const usage = meta ? toUsage(model, mode, meta, startedAt, finishReason) : undefined;
       const name = error instanceof Error ? error.name : "";
       const message = error instanceof Error ? error.message : String(error);
@@ -444,6 +485,7 @@ export class GeminiProvider {
       clearTimeout(watchdogTimer);
     }
 
+    if (looped) throw loopError();
     const usage = toUsage(model, mode, meta, startedAt, finishReason);
 
     if (finishReason === "SAFETY" || finishReason === "PROHIBITED_CONTENT" || finishReason === "BLOCKLIST" || finishReason === "SPII") {

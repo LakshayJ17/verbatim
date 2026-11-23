@@ -1,4 +1,4 @@
-// Shared building blocks for the privacy, terms and cookie pages.
+// Shared building blocks for the terms and cookie pages.
 // Plain server components: no client JavaScript, no animation.
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -19,11 +19,6 @@ export function LegalPage({ title, intro, children }: { title: string; intro?: R
       {children}
       <nav aria-label="Legal" className="mt-16 text-base leading-relaxed">
         <ul className="flex flex-wrap gap-x-6 gap-y-2">
-          <li>
-            <Link href="/privacy" className="underline underline-offset-4">
-              Privacy policy
-            </Link>
-          </li>
           <li>
             <Link href="/terms" className="underline underline-offset-4">
               Terms of service
