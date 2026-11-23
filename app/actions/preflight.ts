@@ -42,7 +42,7 @@ export async function preflightSource(inputUrl: string): Promise<PreflightResult
     };
   }
 
-  // ── 1. URL validation ──────────────────────────────────────────────────────
+  // 1. URL validation
   const parsed = parseYouTubeUrl(inputUrl);
 
   if (parsed.type === 'playlist') {
@@ -90,7 +90,7 @@ export async function preflightSource(inputUrl: string): Promise<PreflightResult
     return { isValid: false, errorMessage: preflightLimit.error, nextAction: 'try_another' };
   }
 
-  // ── 2. Duplicate check (DB lookup before any external API call) ───────────
+  // 2. Duplicate check (DB lookup before any external API call)
   const { data: existing } = await supabase
     .from('sources')
     .select('id')
@@ -108,7 +108,7 @@ export async function preflightSource(inputUrl: string): Promise<PreflightResult
     };
   }
 
-  // ── 3. YouTube metadata (Data API — required) ─────────────────────────────
+  // 3. YouTube metadata (Data API, required)
   let metadata;
   try {
     metadata = await getYouTubeMetadata(externalId);
@@ -149,7 +149,7 @@ export async function preflightSource(inputUrl: string): Promise<PreflightResult
     };
   }
 
-  // ── 4. Availability checks ────────────────────────────────────────────────
+  // 4. Availability checks
   if (metadata.state === 'private' || metadata.state === 'unavailable') {
     return {
       isValid: false,
@@ -174,13 +174,13 @@ export async function preflightSource(inputUrl: string): Promise<PreflightResult
     };
   }
 
-  // ── 5. Fail closed: duration MUST be known ────────────────────────────────
+  // 5. Fail closed: duration must be known
   //
   // If the Data API returns a valid video but no duration (e.g. the field is
   // absent from the response), we cannot enforce the 2-hour limit. Rather than
   // silently allowing potentially unlimited processing, we reject here.
   //
-  // This should be rare in practice — the Data API reliably returns duration
+  // This should be rare in practice: the Data API reliably returns duration
   // for normal public videos. When it does happen it is treated as a transient
   // service issue, not a permanent rejection.
   if (metadata.durationSeconds === undefined) {
@@ -191,7 +191,7 @@ export async function preflightSource(inputUrl: string): Promise<PreflightResult
     };
   }
 
-  // ── 6. Duration gate (before any transcript/AI cost) ─────────────────────
+  // 6. Duration gate (before any transcript/AI cost)
   if (metadata.durationSeconds > MAX_CONTENT_DURATION_SECONDS) {
     const maxHours = Math.floor(MAX_CONTENT_DURATION_SECONDS / 3600);
     return {
@@ -201,7 +201,7 @@ export async function preflightSource(inputUrl: string): Promise<PreflightResult
     };
   }
 
-  // ── 7. Valid ──────────────────────────────────────────────────────────────
+  // 7. Valid
   return {
     isValid: true,
     sourceType: 'youtube',

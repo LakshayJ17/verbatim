@@ -77,19 +77,19 @@ const ERROR_LABELS: Record<string, string> = {
 };
 
 const FLAG_LABELS: Record<string, string> = {
-  ignore_instructions: "“Ignore previous instructions” style text",
+  ignore_instructions: 'Text like "Ignore previous instructions"',
   new_instructions: "Claims to give new instructions",
   role_override: "Tries to change the AI's role",
   system_prompt_probe: "Asks for the hidden prompt",
   chat_template_token: "Chat-template control tokens",
   fake_delimiter: "Tries to close the transcript block",
-  output_steering: "Tries to steer results (e.g. “mark all verified”)",
-  respond_only: "“Respond only with” instructions",
+  output_steering: 'Tries to steer results (e.g. "mark all verified")',
+  respond_only: '"Respond only with" instructions',
   invisible_chars: "Hidden (zero-width / bidi) characters",
 };
 
 function pct(part: number, whole: number): string {
-  if (!whole) return "–";
+  if (!whole) return "-";
   const p = (part / whole) * 100;
   return `${p >= 10 || p === 0 ? Math.round(p) : p.toFixed(1)}%`;
 }
@@ -239,7 +239,7 @@ export default async function AdminUsagePage({
           <Tile label="Posts published" value={formatValue(num(v.posts_published), "int")} sub={`${num(v.likes)} likes, ${num(v.comments)} comments`} />
           <Tile
             label="Images per analysis"
-            value={completed ? (imagesUsed / completed).toFixed(1) : "–"}
+            value={completed ? (imagesUsed / completed).toFixed(1) : "-"}
             sub="How much each analysis gets used"
           />
         </div>
@@ -286,8 +286,8 @@ export default async function AdminUsagePage({
             value={formatValue(todayUsd, "usd")}
             sub={budget ? `${pct(todayUsd, budget)} of the $${budget} daily budget` : "No daily budget set (AI_DAILY_BUDGET_USD)"}
           />
-          <Tile label="Average cost per analysis" value={avgSuccessCost ? formatValue(avgSuccessCost, "usd") : "–"} sub="All-in: failed attempts included, cache hits excluded" />
-          <Tile label="Cost per active user" value={s.active_users ? formatValue(totalUsd / s.active_users, "usd") : "–"} />
+          <Tile label="Average cost per analysis" value={avgSuccessCost ? formatValue(avgSuccessCost, "usd") : "-"} sub="All-in: failed attempts included, cache hits excluded" />
+          <Tile label="Cost per active user" value={s.active_users ? formatValue(totalUsd / s.active_users, "usd") : "-"} />
           <Tile
             label="Served from cache"
             value={pct(num(c.cache_hits), runs)}
@@ -327,9 +327,9 @@ export default async function AdminUsagePage({
                     <tr key={mode} className="border-t border-border">
                       <td className="py-2">{mode === "transcript" ? "Transcript (text)" : "Video (fallback)"}</td>
                       <td className="py-2 text-right">{num(m?.runs)}</td>
-                      <td className="py-2 text-right">{m ? formatValue(num(m.avg_cost_usd), "usd") : "–"}</td>
-                      <td className="py-2 text-right">{m?.avg_ms ? `${Math.round(num(m.avg_ms) / 1000)} s` : "–"}</td>
-                      <td className="py-2 text-right">{m ? formatValue(num(m.cost_usd), "usd") : "–"}</td>
+                      <td className="py-2 text-right">{m ? formatValue(num(m.avg_cost_usd), "usd") : "-"}</td>
+                      <td className="py-2 text-right">{m?.avg_ms ? `${Math.round(num(m.avg_ms) / 1000)} s` : "-"}</td>
+                      <td className="py-2 text-right">{m ? formatValue(num(m.cost_usd), "usd") : "-"}</td>
                     </tr>
                   );
                 })}

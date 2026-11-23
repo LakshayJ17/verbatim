@@ -37,7 +37,7 @@ export async function generateMetadata({
   const bio: string = (profile.bio ?? "").replace(/\s+/g, " ").trim();
   const description = bio
     ? bio.length > 160
-      ? `${bio.slice(0, 159).trimEnd()}\u2026`
+      ? `${bio.slice(0, 157).trimEnd()}...`
       : bio
     : `Quotes and insights ${name} has published on Verbatim.`;
   const canonical = `/profile/${profile.username || username}`;

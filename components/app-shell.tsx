@@ -44,7 +44,7 @@ export function AppShell({ children, user }: { children: React.ReactNode; user: 
 
   return (
     <div className="flex min-h-dvh">
-      {/* ── Sidebar (desktop) ── */}
+      {/* Sidebar (desktop) */}
       <aside className="hidden w-64 shrink-0 bg-sidebar md:block">
         <div className="sticky top-0 flex h-dvh flex-col">
           {/* Logo */}
@@ -117,7 +117,7 @@ export function AppShell({ children, user }: { children: React.ReactNode; user: 
         </div>
       </aside>
 
-      {/* ── Mobile header ── */}
+      {/* Mobile header */}
       <div className="flex flex-1 flex-col">
         <header className="sticky top-0 z-40 flex h-16 items-center justify-between bg-sidebar px-4 md:hidden">
           <Link href="/">
@@ -177,7 +177,7 @@ export function AppShell({ children, user }: { children: React.ReactNode; user: 
           </div>
         )}
 
-        {/* ── Main content ── */}
+        {/* Main content */}
         <main id="main" tabIndex={-1} className="flex-1 outline-none">{children}</main>
       </div>
     </div>

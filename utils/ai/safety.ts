@@ -99,7 +99,7 @@ export function cleanGeneratedText(text: string | undefined | null, maxChars: nu
   out = out.replace(MD_LINK_RE, "$1").replace(HTML_TAG_RE, "");
   if (stripLinks) out = out.replace(URL_RE, "").replace(BARE_DOMAIN_RE, "");
   out = out.replace(/[ \t]+/g, " ").replace(/\s*\n\s*/g, " ").trim();
-  if (out.length > maxChars) out = out.slice(0, maxChars - 1).trimEnd() + "…";
+  if (out.length > maxChars) out = out.slice(0, maxChars - 3).trimEnd() + "...";
   return out;
 }
 

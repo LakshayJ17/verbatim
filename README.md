@@ -21,12 +21,11 @@ AI summaries of videos often paraphrase or invent quotes. Verbatim doesn't take 
 
 ## How it works
 
-```
-YouTube link → check the video → fetch the transcript
-             → Gemini picks quotes and insights
-             → each quote is checked against the transcript
-             → design → download, share or publish
-```
+1. Paste a YouTube link. Verbatim checks the video is public and under two hours.
+2. It fetches the transcript.
+3. Gemini picks the strongest quotes and insights.
+4. Each quote is matched against the transcript and labelled.
+5. Pick a quote and a design, then download, share or publish it.
 
 ## Built with
 

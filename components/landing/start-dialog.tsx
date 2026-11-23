@@ -48,7 +48,7 @@ export function StartDialog() {
             spellCheck={false}
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            placeholder="Paste a YouTube link…"
+            placeholder="Paste a YouTube link..."
             className="h-14 w-full rounded-[var(--radius)] border border-input bg-card pl-12 pr-4 text-[17px] outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring sm:rounded-r-none sm:border-r-0"
           />
         </div>

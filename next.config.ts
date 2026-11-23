@@ -80,7 +80,7 @@ const nextConfig: NextConfig = {
         hostname: supabase.hostname,
         pathname: "/storage/v1/object/public/**",
       },
-      // Account avatars only (/a/… and the older /a-/…). Without a path limit
+      // Account avatars only (/a/... and the older /a-/...). Without a path limit
       // /_next/image would proxy any image anyone hosts on this Google domain.
       { protocol: "https", hostname: GOOGLE_AVATAR_HOST, pathname: "/a/**" },
       { protocol: "https", hostname: GOOGLE_AVATAR_HOST, pathname: "/a-/**" },

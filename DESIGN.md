@@ -1,6 +1,5 @@
 # Verbatim Design System
 
-Format follows the DESIGN.md convention (Google Stitch, VoltAgent/awesome-design-md).
 Source of truth for tokens is `app/globals.css`; this file explains how to use them.
 
 ## 1. Visual Theme & Atmosphere
@@ -92,10 +91,10 @@ Do:
 - Label example content as an example.
 - Keep claims to what the code does (YouTube links only, 2-hour limit, four quote labels).
 
-Don't (owner's standing rules):
+Don't:
 - Purple gradients, any gradient, pill-shaped buttons.
 - Fake reviews, testimonials, users, metrics or customer counters.
-- Vague hero text, emoji icons, em dashes, AI-cliche copy, AI-generated stock photos.
+- Vague hero text, emoji icons, em dashes, cliche marketing copy, stock photos.
 - Over-the-top scroll animation, cursor animation, scroll hijacking.
 - Dead links (`href="#"`). Remove the link or build the page.
 
@@ -106,13 +105,3 @@ Don't (owner's standing rules):
 - Grids collapse to one column; quote card wall goes from 4 to 2 columns.
 - Motion: entrances use `data-rise` / `data-reveal` (see `globals.css`), gated behind `html.js` and `prefers-reduced-motion: no-preference`. Transform and opacity only.
 
-## 9. Agent Prompt Guide
-
-Quick reference: ink `#0d2a1c` for text and fills, paper `#f7f7f7`, surface `#ebebeb`, highlighter `#f6e016` behind ink text only, Zilla Slab, 4px radius, no borders on cards, no shadows at rest.
-
-Example prompts:
-- "Add a page listing saved quotes: page header with heading-display title and one sentence, then `bg-muted p-5` quote rows with a QuoteStatus tag in a `space-y-3` list, empty state as a `bg-muted p-8` block with one sentence and one primary button."
-- "Add a settings form: max-w-2xl, labelled Inputs, primary Button at the end, inline errors in `bg-destructive/10 text-destructive`."
-
-Before finishing UI work, run:
-`node .agents/skills/design-taste-frontend/scripts/lint.mjs <files>` and grep for `—`, `rounded-full`, `text-brand`, `uppercase`, `text-[1`.

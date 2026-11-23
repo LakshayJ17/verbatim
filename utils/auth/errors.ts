@@ -1,7 +1,7 @@
 /**
  * Sign-in errors travel in the URL as short codes (?error=auth_failed), never
  * as text. The pages show only these fixed messages, so a crafted link can't
- * put an attacker's words ("Your account is locked, call…") in the alert box.
+ * put an attacker's words ("Your account is locked, call...") in the alert box.
  */
 const AUTH_ERRORS = {
   auth_failed: "We couldn't sign you in. Please try again.",

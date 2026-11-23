@@ -26,7 +26,7 @@ describe("sanitizeUntrustedText", () => {
   });
 
   it("keeps non-Latin scripts intact", () => {
-    expect(sanitizeUntrustedText("नमस्ते दुनिया — مرحبا")).toBe("नमस्ते दुनिया — مرحبا");
+    expect(sanitizeUntrustedText("नमस्ते दुनिया, مرحبا")).toBe("नमस्ते दुनिया, مرحبا");
   });
 
   it("caps length", () => {

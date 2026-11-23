@@ -3,7 +3,7 @@
  *
  *   const log = debugRun("analysis", sourceId);
  *   log("transcript", { segments: 120 });
- *   // [debug analysis 3fa1c2 src=6b0f…] +412ms transcript {"segments":120}
+ *   // [debug analysis 3fa1c2 src=6b0f...] +412ms transcript {"segments":120}
  *
  * Every line of one run shares a short run id, so concurrent runs can be told
  * apart in the server log. Never pass secrets or full transcripts.

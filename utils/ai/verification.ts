@@ -2,11 +2,11 @@ import { NormalizedSegment } from "../parsers";
 import { QuoteExtraction } from "./schema";
 
 /**
- * verified      — quote matched deterministically against a real transcript
- * needs_review  — fuzzy match ≥80%; may be slightly paraphrased
- * rejected      — no match; likely hallucinated
- * source_derived — no transcript was available; quote comes from Gemini's
- *                  direct video understanding. Not deterministically verified.
+ * verified: quote matched deterministically against a real transcript
+ * needs_review: fuzzy match of 80% or more; may be slightly paraphrased
+ * rejected: no match; likely hallucinated
+ * source_derived: no transcript was available; the quote comes from Gemini's
+ *   direct video understanding and is not deterministically verified.
  *
  * The model never decides this status: whatever it claims, the status is
  * computed here from the stored transcript. That is the main defence against
@@ -198,7 +198,7 @@ export function verifyQuotes(
 
 /**
  * When no transcript is available, mark all candidate quotes as source_derived.
- * These quotes came directly from Gemini's video understanding — they are not
+ * These quotes came directly from Gemini's video understanding, so they are not
  * deterministically verified against a transcript.
  */
 export function markAsSourceDerived(candidates: QuoteExtraction[]): VerifiedQuote[] {

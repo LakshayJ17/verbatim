@@ -9,7 +9,7 @@ export function Skeleton({ className }: { className?: string }) {
 export function PageSkeleton({ rows = 5, grid = false }: { rows?: number; grid?: boolean }) {
   return (
     <div role="status" aria-live="polite" className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-      <span className="sr-only">Loading…</span>
+      <span className="sr-only">Loading...</span>
       <Skeleton className="h-10 w-56" />
       <Skeleton className="mt-3 h-5 w-80 max-w-full" />
       {grid ? (

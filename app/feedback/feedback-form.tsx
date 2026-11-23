@@ -39,7 +39,7 @@ export function FeedbackForm({ page }: { page?: string }) {
           rows={6}
           autoComplete="off"
           aria-describedby={state.error ? "feedback-error" : undefined}
-          placeholder="Something that confused you, a bug, an idea…"
+          placeholder="Something that confused you, a bug, an idea..."
           className="mt-2 w-full rounded-md border border-input bg-card px-3.5 py-2.5 text-base outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring"
         />
       </div>
@@ -71,7 +71,7 @@ export function FeedbackForm({ page }: { page?: string }) {
         disabled={pending}
         className="press inline-flex h-11 items-center rounded-md bg-ink px-5 text-base font-medium text-white outline-none hover:bg-ink-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-60"
       >
-        {pending ? "Sending…" : "Send feedback"}
+        {pending ? "Sending..." : "Send feedback"}
       </button>
       <p className="text-sm text-muted-foreground">
         We store your message, the email if you give one, and your account id if you are signed in.

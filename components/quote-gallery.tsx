@@ -100,7 +100,7 @@ function buildConfig(item: GalleryItem, style: StyleId, format: FormatPresetId, 
 
 function shorten(text: string, max = 110) {
   const clean = text.replace(/\s+/g, " ").trim();
-  return clean.length > max ? `${clean.slice(0, max - 1).trimEnd()}…` : clean;
+  return clean.length > max ? `${clean.slice(0, max - 3).trimEnd()}...` : clean;
 }
 
 /** Arrow keys move a radio group's selection and focus, as native radios do. */
@@ -275,7 +275,7 @@ export function QuoteGallery({
                   Size
                 </p>
                 <p className="text-sm tabular-nums text-muted-foreground">
-                  {preset.label}, {preset.width} × {preset.height} px
+                  {preset.label}, {preset.width} x {preset.height} px
                 </p>
               </div>
               <div

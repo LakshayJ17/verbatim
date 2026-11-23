@@ -119,7 +119,7 @@ export function NewQuoteImagesForm() {
                 name="url"
                 value={urlInput}
                 onChange={e => setUrlInput(e.target.value)}
-                placeholder="https://www.youtube.com/watch?v=…"
+                placeholder="https://www.youtube.com/watch?v=..."
                 inputMode="url"
                 autoComplete="off"
                 spellCheck={false}

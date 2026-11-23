@@ -175,14 +175,14 @@ export default async function AdminHealthPage() {
                     <td className="px-4 py-2"><code>{f.error_code ?? "UNKNOWN"}</code></td>
                     <td className="px-4 py-2">{f.mode}</td>
                     <td className="px-4 py-2 text-sm">{f.model}</td>
-                    <td className="px-4 py-2 text-right tabular-nums">{f.duration_ms ? `${Math.round(f.duration_ms / 1000)} s` : "–"}</td>
+                    <td className="px-4 py-2 text-right tabular-nums">{f.duration_ms ? `${Math.round(f.duration_ms / 1000)} s` : "-"}</td>
                     <td className="px-4 py-2">
                       {f.user_id ? (
                         <Link href={`/admin/users?q=${f.user_id}`} className="underline underline-offset-4">
                           {String(f.user_id).slice(0, 8)}
                         </Link>
                       ) : (
-                        "–"
+                        "-"
                       )}
                     </td>
                   </tr>

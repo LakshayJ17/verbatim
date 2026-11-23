@@ -128,7 +128,7 @@ export function CreatorClient({ initialContent, initialStyle, initialFormat, pub
     }
     setIsPublishing(true);
     try {
-      toast("Preparing your image…");
+      toast("Preparing your image...");
       await publishSavedDesign({ designId: savedDesignId, canvasId: "render-canvas", config, visibility: "public" });
       toast("Posted to Commonplace.");
       router.push("/discover");
@@ -193,7 +193,7 @@ export function CreatorClient({ initialContent, initialStyle, initialFormat, pub
           <div role="status" className="absolute inset-0 z-50 flex items-center justify-center bg-background/70">
             <div className="flex items-center gap-3 rounded-md bg-background p-4 text-base shadow-[0_12px_40px_rgb(6_82_92/0.18)]">
               <Loader2 className="size-5 animate-spin" aria-hidden="true" />
-              <span className="font-medium">Preparing a full-size image…</span>
+              <span className="font-medium">Preparing a full-size image...</span>
             </div>
           </div>
         )}
@@ -255,7 +255,7 @@ export function CreatorClient({ initialContent, initialStyle, initialFormat, pub
                   >
                     <span className="block text-base font-medium">{preset.label}</span>
                     <span className="mt-0.5 block text-sm tabular-nums text-muted-foreground">
-                      {preset.width} × {preset.height}
+                      {preset.width} x {preset.height}
                     </span>
                   </button>
                 );

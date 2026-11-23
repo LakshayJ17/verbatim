@@ -5,14 +5,13 @@ import { z } from "zod";
 /**
  * Supadata API response schema.
  * 
- * IMPORTANT: Supadata returns `offset` and `duration` in MILLISECONDS.
- * Verbatim's NormalizedSegment uses SECONDS.
- * The normalization step converts ms → s.
+ * Supadata returns `offset` and `duration` in milliseconds, but
+ * Verbatim's NormalizedSegment uses seconds, so normalization converts them.
  * 
  * Field mapping:
- *   Supadata `lang` → our `language`
- *   Supadata `offset` (ms) → our `start` (s)
- *   Supadata `duration` (ms) → used to compute `end` (s)
+ *   Supadata `lang` becomes our `language`
+ *   Supadata `offset` (ms) becomes our `start` (s)
+ *   Supadata `duration` (ms) is used to compute `end` (s)
  */
 
 const SupadataSegmentSchema = z.object({

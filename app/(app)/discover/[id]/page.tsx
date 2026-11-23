@@ -45,7 +45,7 @@ async function fetchViewablePost(supabase: ServerSupabase, id: string, columns: 
 
 function truncate(text: string, max: number): string {
   const clean = text.replace(/\s+/g, " ").trim();
-  return clean.length > max ? `${clean.slice(0, max - 1).trimEnd()}\u2026` : clean;
+  return clean.length > max ? `${clean.slice(0, max - 3).trimEnd()}...` : clean;
 }
 
 export async function generateMetadata({

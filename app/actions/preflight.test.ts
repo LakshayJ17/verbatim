@@ -58,35 +58,35 @@ describe('Preflight Source', () => {
     });
   });
 
-  // ── URL validation ──────────────────────────────────────────────────────────
+  // URL validation
 
-  it('invalid (non-YouTube) URL → unsupported', async () => {
+  it('invalid (non-YouTube) URL is unsupported', async () => {
     const result = await preflightSource('https://invalid.com/video');
     expect(result.isValid).toBe(false);
     expect(result.errorMessage).toContain('supports specific long-form YouTube videos');
   });
 
-  it('playlist URL → rejected', async () => {
+  it('playlist URL is rejected', async () => {
     const result = await preflightSource('https://youtube.com/playlist?list=PL123');
     expect(result.isValid).toBe(false);
     expect(result.errorMessage).toContain('Playlists are not supported');
   });
 
-  it('channel URL → rejected', async () => {
+  it('channel URL is rejected', async () => {
     const result = await preflightSource('https://youtube.com/@someChannel');
     expect(result.isValid).toBe(false);
     expect(result.errorMessage).toContain('Channel URLs are not supported');
   });
 
-  it('Shorts URL → rejected', async () => {
+  it('Shorts URL is rejected', async () => {
     const result = await preflightSource('https://youtube.com/shorts/abc123xxxxx');
     expect(result.isValid).toBe(false);
     expect(result.errorMessage).toContain('too short');
   });
 
-  // ── Duplicate detection ─────────────────────────────────────────────────────
+  // Duplicate detection
 
-  it('duplicate source → returns existingSourceId', async () => {
+  it('duplicate source returns existingSourceId', async () => {
     mockMaybeSingle.mockResolvedValue({ data: { id: 'existing-source-id' } });
 
     const result = await preflightSource('https://youtube.com/watch?v=duplicate12');
@@ -96,9 +96,9 @@ describe('Preflight Source', () => {
     expect(result.nextAction).toBe('view_existing');
   });
 
-  // ── Metadata / availability states ─────────────────────────────────────────
+  // Metadata / availability states
 
-  it('valid public video with duration → isValid: true, returns durationSeconds', async () => {
+  it('valid public video with duration is valid and returns durationSeconds', async () => {
     (youtubeModule.getYouTubeMetadata as any).mockResolvedValue({
       id: 'abc12345xxx',
       state: 'valid',
@@ -117,7 +117,7 @@ describe('Preflight Source', () => {
     expect(result.errorMessage).toBeUndefined();
   });
 
-  it('private video → rejected with access error', async () => {
+  it('private video is rejected with an access error', async () => {
     (youtubeModule.getYouTubeMetadata as any).mockResolvedValue({
       id: 'private123x',
       state: 'private',
@@ -128,7 +128,7 @@ describe('Preflight Source', () => {
     expect(result.errorMessage).toContain("couldn't access this conversation");
   });
 
-  it('unavailable video → rejected', async () => {
+  it('unavailable video is rejected', async () => {
     (youtubeModule.getYouTubeMetadata as any).mockResolvedValue({
       id: 'gone123xxxx',
       state: 'unavailable',
@@ -139,7 +139,7 @@ describe('Preflight Source', () => {
     expect(result.errorMessage).toContain("couldn't access this conversation");
   });
 
-  it('live broadcast → rejected', async () => {
+  it('live broadcast is rejected', async () => {
     (youtubeModule.getYouTubeMetadata as any).mockResolvedValue({
       id: 'live123xxxx',
       state: 'live',
@@ -150,7 +150,7 @@ describe('Preflight Source', () => {
     expect(result.errorMessage).toContain('currently live');
   });
 
-  it('upcoming broadcast → rejected', async () => {
+  it('upcoming broadcast is rejected', async () => {
     (youtubeModule.getYouTubeMetadata as any).mockResolvedValue({
       id: 'upcoming123',
       state: 'upcoming',
@@ -161,9 +161,9 @@ describe('Preflight Source', () => {
     expect(result.errorMessage).toContain("hasn't started yet");
   });
 
-  // ── Duration gate ───────────────────────────────────────────────────────────
+  // Duration gate
 
-  it('video exactly at limit (7200s) → valid', async () => {
+  it('video exactly at limit (7200s) is valid', async () => {
     (youtubeModule.getYouTubeMetadata as any).mockResolvedValue({
       id: 'exact123xxx',
       state: 'valid',
@@ -176,7 +176,7 @@ describe('Preflight Source', () => {
     expect(result.durationSeconds).toBe(7200);
   });
 
-  it('video 1 second over limit (7201s) → rejected as too long', async () => {
+  it('video 1 second over limit (7201s) is rejected as too long', async () => {
     (youtubeModule.getYouTubeMetadata as any).mockResolvedValue({
       id: 'long123xxxx',
       state: 'valid',
@@ -189,7 +189,7 @@ describe('Preflight Source', () => {
     expect(result.nextAction).toBe('explore_discover');
   });
 
-  it('10-hour video → rejected as too long', async () => {
+  it('10-hour video is rejected as too long', async () => {
     (youtubeModule.getYouTubeMetadata as any).mockResolvedValue({
       id: 'marathon123',
       state: 'valid',
@@ -201,9 +201,9 @@ describe('Preflight Source', () => {
     expect(result.errorMessage).toContain('too long');
   });
 
-  it('missing durationSeconds from Data API → rejected (fail closed)', async () => {
+  it('missing durationSeconds from Data API is rejected (fail closed)', async () => {
     // Data API returned a valid video but no duration field.
-    // The application must reject — unknown duration = cannot proceed.
+    // The app must reject it: without a duration it cannot continue.
     (youtubeModule.getYouTubeMetadata as any).mockResolvedValue({
       id: 'noduration1',
       state: 'valid',
@@ -217,9 +217,9 @@ describe('Preflight Source', () => {
     expect(result.nextAction).toBe('try_another');
   });
 
-  // ── YouTubeMetadataError handling ───────────────────────────────────────────
+  // YouTubeMetadataError handling
 
-  it('NO_API_KEY → clean configuration error, no transcript/AI call', async () => {
+  it('NO_API_KEY gives a configuration error with no transcript or AI call', async () => {
     (youtubeModule.getYouTubeMetadata as any).mockRejectedValue(
       makeMetadataError(
         "Verbatim can't verify this video's length right now. Please try again later.",
@@ -233,7 +233,7 @@ describe('Preflight Source', () => {
     expect(result.nextAction).toBe('try_another');
   });
 
-  it('YouTubeMetadataError NOT_FOUND → clean user-facing message', async () => {
+  it('YouTubeMetadataError NOT_FOUND gives a clean user-facing message', async () => {
     (youtubeModule.getYouTubeMetadata as any).mockRejectedValue(
       makeMetadataError("We couldn't find this YouTube video.", 'NOT_FOUND')
     );
@@ -244,7 +244,7 @@ describe('Preflight Source', () => {
     expect(result.nextAction).toBe('try_another');
   });
 
-  it('YouTubeMetadataError FORBIDDEN → clean user-facing message', async () => {
+  it('YouTubeMetadataError FORBIDDEN gives a clean user-facing message', async () => {
     (youtubeModule.getYouTubeMetadata as any).mockRejectedValue(
       makeMetadataError("We couldn't access this YouTube video.", 'FORBIDDEN')
     );
@@ -255,7 +255,7 @@ describe('Preflight Source', () => {
     expect(result.nextAction).toBe('try_another');
   });
 
-  it('YouTubeMetadataError TRANSIENT → retry message', async () => {
+  it('YouTubeMetadataError TRANSIENT gives a retry message', async () => {
     (youtubeModule.getYouTubeMetadata as any).mockRejectedValue(
       makeMetadataError("We couldn't check this video right now. Please try again.", 'TRANSIENT')
     );
@@ -266,7 +266,7 @@ describe('Preflight Source', () => {
     expect(result.nextAction).toBe('try_another');
   });
 
-  it('unexpected error from getYouTubeMetadata → safe fallback', async () => {
+  it('unexpected error from getYouTubeMetadata gives a safe fallback', async () => {
     (youtubeModule.getYouTubeMetadata as any).mockRejectedValue(
       new Error('Something completely unexpected')
     );
@@ -276,9 +276,9 @@ describe('Preflight Source', () => {
     expect(result.errorMessage).toContain('try again');
   });
 
-  // ── Guest / auth ────────────────────────────────────────────────────────────
+  // Guest / auth
 
-  it('anonymous user → rejected before any API call', async () => {
+  it('anonymous user is rejected before any API call', async () => {
     mockGetUser.mockResolvedValue({
       data: { user: { id: 'anon-1', is_anonymous: true } },
     });

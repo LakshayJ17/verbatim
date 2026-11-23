@@ -53,7 +53,7 @@ export function LoginForm() {
                 disabled={resending}
                 className="mt-2 font-medium underline underline-offset-4 disabled:opacity-60"
               >
-                {resending ? "Sending…" : "Resend confirmation email"}
+                {resending ? "Sending..." : "Resend confirmation email"}
               </button>
             )}
           </div>
@@ -99,7 +99,7 @@ export function LoginForm() {
         </div>
 
         <Button type="submit" className="mt-2 w-full" size="lg" disabled={isPending}>
-          {isPending ? "Signing in…" : "Sign in"}
+          {isPending ? "Signing in..." : "Sign in"}
         </Button>
       </form>
     </div>

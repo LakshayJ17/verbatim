@@ -232,7 +232,7 @@ export function PostDetailClient({
               autoComplete="off"
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
-              placeholder="Add a comment…"
+              placeholder="Add a comment..."
               maxLength={500}
             />
           </div>

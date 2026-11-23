@@ -97,7 +97,7 @@ export function AnalysisView({ sourceId, sourceTitle, initialAnalysis, autoStart
         )}
         <Button onClick={handleAnalyze} disabled={isAnalyzing} size="lg" className="mt-6 gap-2">
           {isAnalyzing && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
-          {isAnalyzing ? "Finding the best quotes, this can take a minute…" : "Find the best quotes"}
+          {isAnalyzing ? "Finding the best quotes, this can take a minute..." : "Find the best quotes"}
         </Button>
       </div>
     );

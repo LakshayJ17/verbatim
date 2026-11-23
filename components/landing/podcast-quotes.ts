@@ -19,12 +19,12 @@ export const PODCAST_QUOTES = {
     text: "Longevity is not a goal; relevance is.",
     speaker: "Satya Nadella",
     show: "Dwarkesh Podcast",
-    episode: "Satya Nadella: Microsoft’s AGI plan & quantum breakthrough",
+    episode: "Satya Nadella: Microsoft's AGI plan & quantum breakthrough",
     year: 2025,
     source: "https://www.dwarkesh.com/p/satya-nadella",
   },
   tao: {
-    text: "Sometimes actually it’s even productive to make mistakes.",
+    text: "Sometimes actually it's even productive to make mistakes.",
     speaker: "Terence Tao",
     show: "Lex Fridman Podcast",
     episode: "#472",
@@ -40,7 +40,7 @@ export const PODCAST_QUOTES = {
     source: "https://lexfridman.com/sundar-pichai-transcript/",
   },
   naval: {
-    text: "If you have peace of body, it’s easier to have peace of mind.",
+    text: "If you have peace of body, it's easier to have peace of mind.",
     speaker: "Naval Ravikant",
     show: "The Tim Ferriss Show",
     episode: "#136",
@@ -48,7 +48,7 @@ export const PODCAST_QUOTES = {
     source: "https://tim.blog/naval-ravikant-on-the-tim-ferriss-show-transcript/",
   },
   hassabis: {
-    text: "You can learn something kind of equally valuable from an experiment that doesn’t work.",
+    text: "You can learn something kind of equally valuable from an experiment that doesn't work.",
     speaker: "Demis Hassabis",
     show: "Lex Fridman Podcast",
     episode: "#475",
@@ -64,7 +64,7 @@ export const PODCAST_QUOTES = {
     source: "https://tim.blog/2021/07/31/ramit-sethi-2-transcript/",
   },
   bezos: {
-    text: "Every day you are deciding what you’re going to do and you are not trapped by what you were or who you were or any self-consistency.",
+    text: "Every day you are deciding what you're going to do and you are not trapped by what you were or who you were or any self-consistency.",
     speaker: "Jeff Bezos",
     show: "Lex Fridman Podcast",
     episode: "#405",
@@ -73,7 +73,7 @@ export const PODCAST_QUOTES = {
   },
   srinivas: {
     // Excerpt: the sentence opens with "But" and continues past "living for it".
-    text: "If there is a certain idea that really just occupies your mind all the time, it’s worth making your life about that idea and living for it.",
+    text: "If there is a certain idea that really just occupies your mind all the time, it's worth making your life about that idea and living for it.",
     speaker: "Aravind Srinivas",
     show: "Lex Fridman Podcast",
     episode: "#434",

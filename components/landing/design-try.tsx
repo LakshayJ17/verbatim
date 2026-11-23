@@ -113,7 +113,7 @@ export function DesignTry() {
                   type="button"
                   aria-pressed={on}
                   onClick={() => setFormat(f)}
-                  title={`${p.width} × ${p.height}`}
+                  title={`${p.width} x ${p.height}`}
                   className={cn(
                     "press flex h-11 items-center gap-2 rounded-[var(--radius)] px-3 text-[15px] outline-none focus-visible:ring-2 focus-visible:ring-paper",
                     on ? "bg-paper font-semibold text-ink" : "bg-white/[0.08] text-paper hover:bg-white/[0.14]"
@@ -155,7 +155,7 @@ export function DesignTry() {
           <p className="text-[16px] text-muted-foreground">
             <span className="font-semibold text-foreground">{DESIGN_STYLES[style].label}</span>, {preset.label.toLowerCase()} ·{" "}
             <span className="tabular-nums">
-              {preset.width} × {preset.height}
+              {preset.width} x {preset.height}
             </span>
           </p>
           <Link

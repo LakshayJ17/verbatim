@@ -26,10 +26,10 @@ export interface YouTubeMetadata {
 // ---------------------------------------------------------------------------
 
 /**
- * NO_API_KEY  — YOUTUBE_DATA_API_KEY is not configured server-side.
- * NOT_FOUND   — Video does not exist or has been deleted.
- * FORBIDDEN   — API quota exceeded or access denied.
- * TRANSIENT   — Temporary failure (network, 5xx, timeout). Safe to retry.
+ * NO_API_KEY: YOUTUBE_DATA_API_KEY is not configured server-side.
+ * NOT_FOUND: video does not exist or has been deleted.
+ * FORBIDDEN: API quota exceeded or access denied.
+ * TRANSIENT: temporary failure (network, 5xx, timeout). Safe to retry.
  */
 export type YouTubeMetadataErrorCode =
   | 'NO_API_KEY'
@@ -55,7 +55,7 @@ export class YouTubeMetadataError extends Error {
  * Parses an ISO 8601 duration string (e.g. "PT1H42M10S") into total seconds.
  *
  * Returns undefined if the string is missing or unparseable. The caller
- * must treat undefined as "duration unknown → fail closed".
+ * must treat undefined as "duration unknown, so fail closed".
  */
 export function parseISO8601Duration(duration: string | undefined | null): number | undefined {
   if (!duration) return undefined;
@@ -83,7 +83,7 @@ export function parseISO8601Duration(duration: string | undefined | null): numbe
 const MAX_RETRIES = 2;
 const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504]);
 
-// Fixed endpoint — never constructed from user input (SSRF prevention).
+// Fixed endpoint, never built from user input (prevents SSRF).
 const DATA_API_BASE = "https://www.googleapis.com/youtube/v3/videos";
 
 interface DataApiVideoItem {
@@ -112,7 +112,7 @@ interface DataApiResponse {
 }
 
 async function fetchFromDataAPI(videoId: string, apiKey: string): Promise<YouTubeMetadata> {
-  // videoId has already been validated by parseYouTubeUrl — safe to interpolate.
+  // videoId was already validated by parseYouTubeUrl, so it is safe to interpolate.
   const url = new URL(DATA_API_BASE);
   url.searchParams.set("part", "snippet,contentDetails,status");
   url.searchParams.set("id", videoId);
@@ -265,11 +265,11 @@ function normalizeDataApiItem(item: DataApiVideoItem): YouTubeMetadata {
  * REQUIRES: YOUTUBE_DATA_API_KEY environment variable (server-only).
  *
  * If the key is missing, throws YouTubeMetadataError('NO_API_KEY') immediately.
- * The caller (preflight) must treat this as a hard rejection — no transcript
+ * The caller (preflight) must treat this as a hard rejection: no transcript
  * or AI work should proceed without verified duration.
  *
  * There is no oEmbed fallback. Duration is a safety-critical field.
- * Unknown duration = application must fail closed.
+ * If the duration is unknown, the app must fail closed.
  */
 export async function getYouTubeMetadata(videoId: string): Promise<YouTubeMetadata> {
   const apiKey = process.env.YOUTUBE_DATA_API_KEY;

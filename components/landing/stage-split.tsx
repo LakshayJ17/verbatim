@@ -273,7 +273,7 @@ function ShareState() {
     { icon: UsersThree, label: "Commonplace" },
   ];
   return (
-    <Sheet title="Share" meta="Square, 1080 × 1080">
+    <Sheet title="Share" meta="Square, 1080 x 1080">
       <div className="mx-auto aspect-square w-3/5 overflow-hidden rounded-[var(--radius)]">
         <ScaledRenderer config={exampleConfig("old_school", QUOTES[1].text)} />
       </div>

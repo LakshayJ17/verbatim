@@ -119,7 +119,7 @@ export function SignupForm() {
         </div>
 
         <Button type="submit" className="mt-2 w-full" size="lg" disabled={isPending}>
-          {isPending ? "Creating account…" : "Create account"}
+          {isPending ? "Creating account..." : "Create account"}
         </Button>
       </form>
     </div>

@@ -13,7 +13,7 @@ describe('SupadataTranscriptProvider', () => {
     expect(() => new SupadataTranscriptProvider()).toThrow('SUPADATA_API_KEY is not configured');
   });
 
-  it('fetches and normalizes transcript — converts ms to seconds', async () => {
+  it('fetches and normalizes the transcript, converting ms to seconds', async () => {
     // Real Supadata API format: offset and duration in MILLISECONDS
     const mockResponse = {
       lang: 'en',
@@ -33,7 +33,7 @@ describe('SupadataTranscriptProvider', () => {
     const result = await provider.getTranscript('https://youtube.com/watch?v=123');
 
     expect(result.segments).toHaveLength(2);
-    // Verify ms → s conversion
+    // Check the ms to seconds conversion
     expect(result.segments[0].start).toBe(0);
     expect(result.segments[0].end).toBe(5.489);
     expect(result.segments[0].text).toBe('Hello world');
@@ -104,7 +104,7 @@ describe('SupadataTranscriptProvider', () => {
     const provider = new SupadataTranscriptProvider();
     await expect(provider.getTranscript('https://youtube.com/watch?v=123'))
       .rejects.toThrow('Transcript not found for this video.');
-    // 404 is NOT retryable — should be exactly 1 call
+    // A 404 is not retried, so there is exactly one call
     expect(callCount).toBe(1);
   });
 
@@ -163,7 +163,7 @@ describe('SupadataTranscriptProvider', () => {
     });
 
     const provider = new SupadataTranscriptProvider();
-    // content is undefined → empty transcript
+    // content is undefined, so the transcript is empty
     await expect(provider.getTranscript('https://youtube.com/watch?v=123'))
       .rejects.toThrow('Empty transcript returned.');
   });

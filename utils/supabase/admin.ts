@@ -1,5 +1,5 @@
 import "server-only";
-// Service role client. Bypasses RLS. Import ONLY from admin code paths:
+// Service role client. Bypasses RLS. Import only from admin code paths:
 // app/(admin)/** and app/actions/admin.ts, always after requireAdmin().
 import { createClient } from '@supabase/supabase-js';
 

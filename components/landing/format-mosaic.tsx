@@ -30,7 +30,7 @@ function Label({ format, style }: { format: FormatPresetId; style: StyleId }) {
   const p = FORMAT_PRESETS[format];
   return (
     <span className="pointer-events-none absolute bottom-2 left-2 rounded-[var(--radius)] bg-paper/95 px-2 py-0.5 text-[13px] leading-5 text-ink">
-      {p.label} <span className="tabular-nums text-ink-soft">{p.width}×{p.height}</span>
+      {p.label} <span className="tabular-nums text-ink-soft">{p.width}x{p.height}</span>
       <span className="sr-only">, {DESIGN_STYLES[style].label} design</span>
     </span>
   );
@@ -69,7 +69,7 @@ export function FormatMosaic() {
                 <span aria-hidden="true" className="pointer-events-none absolute inset-0 rounded-[var(--radius)] ring-1 ring-inset ring-border" />
               </div>
               <p className="mt-1.5 text-[14px]">
-                {p.label} <span className="tabular-nums text-ink-soft">{p.width}×{p.height}</span>
+                {p.label} <span className="tabular-nums text-ink-soft">{p.width}x{p.height}</span>
               </p>
             </li>
           );

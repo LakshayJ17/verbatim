@@ -1,63 +1,59 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { parseISO8601Duration, getYouTubeMetadata } from './youtube';
 
-// ─────────────────────────────────────────────────────────────────────────────
 // ISO 8601 duration parser
-// ─────────────────────────────────────────────────────────────────────────────
 
 describe('parseISO8601Duration', () => {
-  it('PT5M → 300', () => {
+  it('parses PT5M as 300', () => {
     expect(parseISO8601Duration('PT5M')).toBe(300);
   });
 
-  it('PT59M59S → 3599', () => {
+  it('parses PT59M59S as 3599', () => {
     expect(parseISO8601Duration('PT59M59S')).toBe(3599);
   });
 
-  it('PT1H → 3600', () => {
+  it('parses PT1H as 3600', () => {
     expect(parseISO8601Duration('PT1H')).toBe(3600);
   });
 
-  it('PT2H → 7200', () => {
+  it('parses PT2H as 7200', () => {
     expect(parseISO8601Duration('PT2H')).toBe(7200);
   });
 
-  it('PT2H1M → 7260 (too long past 7200)', () => {
+  it('parses PT2H1M as 7260 (too long past 7200)', () => {
     expect(parseISO8601Duration('PT2H1M')).toBe(7260);
   });
 
-  it('PT10H → 36000', () => {
+  it('parses PT10H as 36000', () => {
     expect(parseISO8601Duration('PT10H')).toBe(36000);
   });
 
-  it('PT1H42M10S → 6130', () => {
+  it('parses PT1H42M10S as 6130', () => {
     expect(parseISO8601Duration('PT1H42M10S')).toBe(6130);
   });
 
-  it('PT18M32S → 1112', () => {
+  it('parses PT18M32S as 1112', () => {
     expect(parseISO8601Duration('PT18M32S')).toBe(1112);
   });
 
-  it('missing duration (undefined) → undefined', () => {
+  it('missing duration (undefined) gives undefined', () => {
     expect(parseISO8601Duration(undefined)).toBeUndefined();
   });
 
-  it('empty string → undefined', () => {
+  it('empty string gives undefined', () => {
     expect(parseISO8601Duration('')).toBeUndefined();
   });
 
-  it('invalid string → undefined', () => {
+  it('invalid string gives undefined', () => {
     expect(parseISO8601Duration('not-a-duration')).toBeUndefined();
   });
 
-  it('P0D edge case → 0', () => {
+  it('P0D edge case gives 0', () => {
     expect(parseISO8601Duration('P0DT0H0M0S')).toBe(0);
   });
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// getYouTubeMetadata — Data API path (YOUTUBE_DATA_API_KEY set)
-// ─────────────────────────────────────────────────────────────────────────────
+// getYouTubeMetadata with the Data API (YOUTUBE_DATA_API_KEY set)
 
 /**
  * Builds a minimal realistic YouTube Data API v3 videos.list response.
@@ -91,14 +87,14 @@ function makeDataApiResponse(overrides: {
   };
 }
 
-describe('getYouTubeMetadata — Data API', () => {
+describe('getYouTubeMetadata with the Data API', () => {
   beforeEach(() => {
     vi.unstubAllEnvs();
     vi.stubEnv('YOUTUBE_DATA_API_KEY', 'test_data_api_key');
     vi.restoreAllMocks();
   });
 
-  it('normal public video → valid with title, creator, duration', async () => {
+  it('normal public video is valid with title, creator, duration', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve(makeDataApiResponse({
@@ -117,7 +113,7 @@ describe('getYouTubeMetadata — Data API', () => {
     expect(result.id).toBe('testVideoId');
   });
 
-  it('private video → state: private', async () => {
+  it('private video has state private', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve(makeDataApiResponse({ privacyStatus: 'private' })),
@@ -127,7 +123,7 @@ describe('getYouTubeMetadata — Data API', () => {
     expect(result.state).toBe('private');
   });
 
-  it('live broadcast → state: live', async () => {
+  it('live broadcast has state live', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve(makeDataApiResponse({ liveBroadcastContent: 'live' })),
@@ -137,7 +133,7 @@ describe('getYouTubeMetadata — Data API', () => {
     expect(result.state).toBe('live');
   });
 
-  it('upcoming broadcast → state: upcoming', async () => {
+  it('upcoming broadcast has state upcoming', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve(makeDataApiResponse({ liveBroadcastContent: 'upcoming' })),
@@ -147,7 +143,7 @@ describe('getYouTubeMetadata — Data API', () => {
     expect(result.state).toBe('upcoming');
   });
 
-  it('completed livestream (liveBroadcastContent: none) → state: valid (normal processing)', async () => {
+  it('completed livestream (liveBroadcastContent: none) has state valid (normal processing)', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve(makeDataApiResponse({
@@ -161,7 +157,7 @@ describe('getYouTubeMetadata — Data API', () => {
     expect(result.durationSeconds).toBe(9000);
   });
 
-  it('video not found (empty items) → state: unavailable', async () => {
+  it('video not found (empty items) has state unavailable', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ items: [] }),
@@ -171,21 +167,21 @@ describe('getYouTubeMetadata — Data API', () => {
     expect(result.state).toBe('unavailable');
   });
 
-  it('404 HTTP → throws YouTubeMetadataError NOT_FOUND', async () => {
+  it('404 HTTP throws YouTubeMetadataError NOT_FOUND', async () => {
     global.fetch = vi.fn().mockResolvedValue({ ok: false, status: 404 });
 
     await expect(getYouTubeMetadata('testVideoId'))
       .rejects.toMatchObject({ code: 'NOT_FOUND' });
   });
 
-  it('403 HTTP → throws YouTubeMetadataError FORBIDDEN', async () => {
+  it('403 HTTP throws YouTubeMetadataError FORBIDDEN', async () => {
     global.fetch = vi.fn().mockResolvedValue({ ok: false, status: 403 });
 
     await expect(getYouTubeMetadata('testVideoId'))
       .rejects.toMatchObject({ code: 'FORBIDDEN' });
   });
 
-  it('429 HTTP → retries and eventually throws TRANSIENT', async () => {
+  it('429 HTTP retries and eventually throws TRANSIENT', async () => {
     let calls = 0;
     global.fetch = vi.fn().mockImplementation(() => {
       calls++;
@@ -214,7 +210,7 @@ describe('getYouTubeMetadata — Data API', () => {
     expect(result.durationSeconds).toBe(2700);
   });
 
-  it('malformed JSON → throws TRANSIENT', async () => {
+  it('malformed JSON throws TRANSIENT', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.reject(new Error('bad json')),
@@ -224,7 +220,7 @@ describe('getYouTubeMetadata — Data API', () => {
       .rejects.toMatchObject({ code: 'TRANSIENT' });
   });
 
-  it('invalid API response structure (no items field) → throws TRANSIENT', async () => {
+  it('invalid API response structure (no items field) throws TRANSIENT', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ kind: 'youtube#videoListResponse' }), // no items
@@ -234,7 +230,7 @@ describe('getYouTubeMetadata — Data API', () => {
     expect(result.state).toBe('unavailable');
   });
 
-  it('API-level 403 error in 200 body → throws FORBIDDEN', async () => {
+  it('API-level 403 error in 200 body throws FORBIDDEN', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ error: { code: 403, message: 'quota exceeded' } }),
@@ -244,7 +240,7 @@ describe('getYouTubeMetadata — Data API', () => {
       .rejects.toMatchObject({ code: 'FORBIDDEN' });
   });
 
-  it('missing duration in response → durationSeconds is undefined (safe)', async () => {
+  it('missing duration in response leaves durationSeconds undefined (safe)', async () => {
     // Return a response where contentDetails.duration is omitted entirely
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
@@ -270,7 +266,7 @@ describe('getYouTubeMetadata — Data API', () => {
     expect(result.durationSeconds).toBeUndefined();
   });
 
-  it('caption: true → hasTranscript is true', async () => {
+  it('caption: true sets hasTranscript', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve(makeDataApiResponse({ caption: 'true' })),
@@ -281,25 +277,23 @@ describe('getYouTubeMetadata — Data API', () => {
   });
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// getYouTubeMetadata — no API key → throws immediately (fail closed)
-// ─────────────────────────────────────────────────────────────────────────────
+// getYouTubeMetadata without an API key throws immediately (fail closed)
 
-describe('getYouTubeMetadata — no API key', () => {
+describe('getYouTubeMetadata without an API key', () => {
   beforeEach(() => {
     vi.unstubAllEnvs();
     vi.stubEnv('YOUTUBE_DATA_API_KEY', '');
     vi.restoreAllMocks();
   });
 
-  it('missing API key → throws YouTubeMetadataError NO_API_KEY without calling fetch', async () => {
+  it('missing API key throws YouTubeMetadataError NO_API_KEY without calling fetch', async () => {
     const fetchSpy = vi.fn();
     global.fetch = fetchSpy;
 
     await expect(getYouTubeMetadata('testVideoId'))
       .rejects.toMatchObject({ code: 'NO_API_KEY' });
 
-    // fetch must never be called — no expensive external request
+    // fetch must never be called: no external request at all
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 });

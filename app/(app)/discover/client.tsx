@@ -146,7 +146,7 @@ export function DiscoverClient({
                 name="q"
                 type="search"
                 defaultValue={activeSearch}
-                placeholder="Search quotes, speakers or sources…"
+                placeholder="Search quotes, speakers or sources..."
                 autoComplete="off"
                 className="pl-10"
               />

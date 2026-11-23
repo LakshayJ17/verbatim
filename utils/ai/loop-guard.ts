@@ -1,7 +1,7 @@
 /**
  * Spots a model that is stuck repeating itself, so the stream can be stopped
  * early instead of running to the output cap. Gemini 3 sometimes does this:
- * a number that never ends ("0.950000000…"), a whitespace run, or one phrase
+ * a number that never ends ("0.950000000..."), a whitespace run, or one phrase
  * over and over. Seen on a 6-minute transcript that should have produced
  * about 1,000 output tokens and produced 16,368 instead.
  */
