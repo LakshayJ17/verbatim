@@ -27,11 +27,15 @@ const supabaseWsOrigin = `${supabase.protocol === "http" ? "ws" : "wss"}://${sup
 // Google account avatars (OAuth user_metadata.avatar_url) rendered via next/image.
 const GOOGLE_AVATAR_HOST = "lh3.googleusercontent.com";
 
+// Cloudflare Turnstile (CAPTCHA on public forms) loads a script and runs its
+// challenge in a frame. Allowed only when a site key is configured.
+const TURNSTILE_ORIGIN = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ? " https://challenges.cloudflare.com" : "";
+
 const contentSecurityPolicy = [
   "default-src 'self'",
   // 'unsafe-inline' covers the Next.js inline bootstrap and the root layout's
   // inline `js` class script. React needs eval only in development.
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}${TURNSTILE_ORIGIN}`,
   "style-src 'self' 'unsafe-inline'",
   `img-src 'self' data: blob: ${supabaseOrigin} https://${GOOGLE_AVATAR_HOST}`,
   "font-src 'self' data:",
@@ -40,7 +44,7 @@ const contentSecurityPolicy = [
   "media-src 'self'",
   "worker-src 'self' blob:",
   "manifest-src 'self'",
-  "frame-src 'none'",
+  TURNSTILE_ORIGIN ? `frame-src${TURNSTILE_ORIGIN}` : "frame-src 'none'",
   "frame-ancestors 'none'",
   `form-action 'self' ${supabaseOrigin} https://accounts.google.com`,
   "base-uri 'self'",

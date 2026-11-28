@@ -7,6 +7,7 @@ import { FORMAT_PRESETS, type FormatPresetId } from "@/utils/design/presets";
 import { DESIGN_STYLES, type StyleId } from "@/utils/design/styles";
 import { revalidatePath } from "next/cache";
 import { track } from "@/utils/analytics/track";
+import { consumeRateLimit } from "@/utils/rate-limit";
 
 const colour = z.string().max(64).regex(/^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%/]+\)|[a-z]+)$/i);
 const font = z.string().max(200).regex(/^[\w\s,"'-]+$/);
@@ -97,6 +98,9 @@ export async function saveDesign(params: SaveDesignParams): Promise<{ id: string
       sourceTitle: pickSource(insight.analyses)?.title || "Unknown source",
     };
   }
+
+  const limit = await consumeRateLimit(supabase, "design_save");
+  if (!limit.ok) return { error: limit.error };
 
   const { data, error } = await supabase
     .from("designs")

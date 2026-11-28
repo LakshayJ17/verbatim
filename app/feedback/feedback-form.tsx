@@ -2,11 +2,19 @@
 
 import { useActionState } from "react";
 import { sendFeedback, type FeedbackState } from "@/app/actions/feedback";
+import { Captcha } from "@/components/captcha";
 
-const initial: FeedbackState = { ok: false };
+type FormState = FeedbackState & { attempt: number };
+const initial: FormState = { ok: false, attempt: 0 };
 
 export function FeedbackForm({ page }: { page?: string }) {
-  const [state, action, pending] = useActionState(sendFeedback, initial);
+  const [state, action, pending] = useActionState(
+    async (prev: FormState, formData: FormData): Promise<FormState> => ({
+      ...(await sendFeedback(prev, formData)),
+      attempt: prev.attempt + 1,
+    }),
+    initial
+  );
 
   if (state.ok) {
     return (
@@ -66,13 +74,16 @@ export function FeedbackForm({ page }: { page?: string }) {
         </p>
       )}
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="press inline-flex h-11 items-center rounded-md bg-ink px-5 text-base font-medium text-white outline-none hover:bg-ink-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-60"
-      >
-        {pending ? "Sending..." : "Send feedback"}
-      </button>
+      <div>
+        <Captcha resetKey={state.attempt} shownClassName="mb-4" />
+        <button
+          type="submit"
+          disabled={pending}
+          className="press inline-flex h-11 items-center rounded-md bg-ink px-5 text-base font-medium text-white outline-none hover:bg-ink-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-60"
+        >
+          {pending ? "Sending..." : "Send feedback"}
+        </button>
+      </div>
       <p className="text-sm text-muted-foreground">
         We store your message, the email if you give one, and your account id if you are signed in.
       </p>

@@ -7,6 +7,8 @@ import { createClient } from "@/utils/supabase/server";
 import { z } from "zod";
 import { ensureProfile } from "@/utils/auth/profile";
 import { consumeNetworkLimit } from "@/utils/rate-limit";
+import { captchaTokenFrom, cleanCaptchaToken, isCaptchaError } from "@/utils/captcha/server";
+import { CAPTCHA_FAILED } from "@/utils/captcha/field";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -66,7 +68,10 @@ export async function login(formData: FormData) {
   }
 
   await clearExistingSession(supabase);
-  const { data: signedIn, error } = await supabase.auth.signInWithPassword(data);
+  const { data: signedIn, error } = await supabase.auth.signInWithPassword({
+    ...data,
+    options: { captchaToken: captchaTokenFrom(formData) },
+  });
 
   if (error) {
     if (error.code === "email_not_confirmed" || /email not confirmed/i.test(error.message)) {
@@ -75,6 +80,7 @@ export async function login(formData: FormData) {
         needsConfirmation: true,
       };
     }
+    if (isCaptchaError(error)) return { error: CAPTCHA_FAILED };
     return { error: error.message };
   }
 
@@ -111,10 +117,12 @@ export async function signup(formData: FormData) {
     options: {
       data: { full_name: name },
       emailRedirectTo: `${origin}/auth/callback`,
+      captchaToken: captchaTokenFrom(formData),
     },
   });
 
   if (error) {
+    if (isCaptchaError(error)) return { error: CAPTCHA_FAILED };
     return { error: error.message };
   }
 
@@ -144,17 +152,23 @@ const resendSchema = z.object({ email: z.string().email("Invalid email address")
  * can't be used to find out which emails have accounts. Supabase applies its
  * own email rate limits on top.
  */
-export async function resendConfirmation(email: string) {
+export async function resendConfirmation(email: string, captchaToken?: string) {
   const parsed = resendSchema.safeParse({ email });
   if (!parsed.success) return { error: parsed.error.issues[0].message };
+
+  // Each resend sends an email, so cap how many one network can trigger.
+  if (!(await consumeNetworkLimit("resend_confirmation"))) {
+    return { error: "Too many emails sent. Please wait a few minutes and try again." };
+  }
 
   const supabase = await createClient();
   const origin = await siteOrigin();
   const { error } = await supabase.auth.resend({
     type: "signup",
     email: parsed.data.email,
-    options: { emailRedirectTo: `${origin}/auth/callback` },
+    options: { emailRedirectTo: `${origin}/auth/callback`, captchaToken: cleanCaptchaToken(captchaToken) },
   });
+  if (error && isCaptchaError(error)) return { error: CAPTCHA_FAILED };
   if (error && error.status === 429) {
     return { error: "Too many emails sent. Please wait a few minutes and try again." };
   }
@@ -169,7 +183,7 @@ export async function logout() {
   redirect("/login");
 }
 
-export async function continueAsGuest() {
+export async function continueAsGuest(formData?: FormData) {
   const supabase = await createClient();
 
   // Already a guest in this browser: keep that session rather than creating
@@ -188,9 +202,12 @@ export async function continueAsGuest() {
   }
 
   await clearExistingSession(supabase);
-  const { data, error } = await supabase.auth.signInAnonymously();
+  const { data, error } = await supabase.auth.signInAnonymously({
+    options: { captchaToken: formData ? captchaTokenFrom(formData) : undefined },
+  });
 
   if (error) {
+    if (isCaptchaError(error)) redirect("/login?error=captcha_failed");
     console.error("[auth] guest sign-in failed:", error.message);
     redirect("/login?error=guest_unavailable");
   }

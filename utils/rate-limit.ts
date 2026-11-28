@@ -21,6 +21,9 @@ export const RATE_LIMITS = {
   like: { limit: 120, window: 60, failClosed: false, message: "Slow down a little and try again." },
   bookmark: { limit: 120, window: 60, failClosed: false, message: "Slow down a little and try again." },
   follow: { limit: 60, window: 60, failClosed: false, message: "Slow down a little and try again." },
+  design_save: { limit: 120, window: 3_600, failClosed: false, message: "You have saved a lot of designs in the last hour. Please wait a few minutes." },
+  collection_create: { limit: 30, window: 3_600, failClosed: false, message: "You have created a lot of collections in the last hour. Please wait a while." },
+  profile_update: { limit: 30, window: 3_600, failClosed: false, message: "You have changed your profile a lot in the last hour. Please wait a while." },
 } as const;
 
 export type RateLimitAction = keyof typeof RATE_LIMITS;
@@ -61,6 +64,7 @@ export const NETWORK_LIMITS = {
   signup: { limit: 10, window: 3_600 },
   login: { limit: 20, window: 900 },
   feedback_visitor: { limit: 5, window: 3_600 },
+  resend_confirmation: { limit: 5, window: 3_600 },
 } as const;
 
 export type NetworkLimitAction = keyof typeof NETWORK_LIMITS;

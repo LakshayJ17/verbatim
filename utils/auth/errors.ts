@@ -7,6 +7,7 @@ const AUTH_ERRORS = {
   auth_failed: "We couldn't sign you in. Please try again.",
   guest_unavailable: "Guest access is unavailable right now. Please sign in with Google or create an account.",
   guest_limit: "Too many guest sessions from this network. Please try again later, or create an account.",
+  captcha_failed: "Please complete the security check and try again.",
 } as const;
 
 export type AuthErrorCode = keyof typeof AUTH_ERRORS;

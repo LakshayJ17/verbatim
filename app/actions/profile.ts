@@ -4,6 +4,7 @@ import { z } from "zod";
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 import { USERNAME_RE } from "@/utils/auth/username";
+import { consumeRateLimit } from "@/utils/rate-limit";
 
 // Every field is untrusted client input. Before this, any string (spaces,
 // slashes, 10k characters) could be saved as a username and broke
@@ -28,6 +29,9 @@ export async function updateProfile(data: { full_name?: string; bio?: string; us
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user || user.is_anonymous) return { error: "Unauthorized" };
+
+  const limit = await consumeRateLimit(supabase, "profile_update");
+  if (!limit.ok) return { error: limit.error };
 
   const { full_name, bio, username } = parsed.data;
   const { error } = await supabase

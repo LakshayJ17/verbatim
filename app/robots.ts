@@ -15,7 +15,6 @@ export default function robots(): MetadataRoute.Robots {
         "/create",
         "/auth",
         "/api",
-        "/admin",
       ],
     },
     sitemap: absoluteUrl("/sitemap.xml"),

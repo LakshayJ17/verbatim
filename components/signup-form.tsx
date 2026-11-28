@@ -7,25 +7,28 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { QuickSignIn } from "@/components/quick-sign-in";
+import { Captcha } from "@/components/captcha";
 
 const initialState: FormState = {
   error: "",
   message: "",
+  attempt: 0,
 };
 
-type FormState = { error: string; message: string };
+type FormState = { error: string; message: string; attempt: number };
 
 export function SignupForm() {
   const [state, formAction, isPending] = useActionState(
     async (prevState: FormState, formData: FormData) => {
       const result = await signup(formData);
+      const attempt = prevState.attempt + 1;
       if (result && "error" in result && result.error) {
-        return { error: result.error, message: "" };
+        return { error: result.error, message: "", attempt };
       }
       if (result && "message" in result && result.message) {
-        return { error: "", message: result.message };
+        return { error: "", message: result.message, attempt };
       }
-      return { error: "", message: "" };
+      return { error: "", message: "", attempt };
     },
     initialState
   );
@@ -118,9 +121,12 @@ export function SignupForm() {
           </label>
         </div>
 
-        <Button type="submit" className="mt-2 w-full" size="lg" disabled={isPending}>
-          {isPending ? "Creating account..." : "Create account"}
-        </Button>
+        <div>
+          <Captcha resetKey={state.attempt} />
+          <Button type="submit" className="mt-2 w-full" size="lg" disabled={isPending}>
+            {isPending ? "Creating account..." : "Create account"}
+          </Button>
+        </div>
       </form>
     </div>
   );

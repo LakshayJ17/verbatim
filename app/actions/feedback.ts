@@ -4,6 +4,8 @@ import { z } from "zod";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { consumeRateLimit, consumeNetworkLimit, RATE_LIMITS } from "@/utils/rate-limit";
+import { captchaTokenFrom, verifyCaptcha } from "@/utils/captcha/server";
+import { CAPTCHA_FAILED } from "@/utils/captcha/field";
 
 /** Owner notification emails per hour, across everyone, so a flood can't empty the inbox or the Resend quota. */
 const MAX_EMAILS_PER_HOUR = 10;
@@ -49,12 +51,15 @@ export async function sendFeedback(_prev: FeedbackState, formData: FormData): Pr
 
   // Members: per-account limit. Visitors and guests (who can make new guest
   // accounts at will): per-network limit.
+  // Visitors and guests also pass the security check, since they need no
+  // account to send this.
   const member = user && !user.is_anonymous;
   if (member) {
     const limit = await consumeRateLimit(supabase, "feedback");
     if (!limit.ok) return { ok: false, error: limit.error };
-  } else if (!(await consumeNetworkLimit("feedback_visitor"))) {
-    return { ok: false, error: RATE_LIMITS.feedback.message };
+  } else {
+    if (!(await verifyCaptcha(captchaTokenFrom(formData)))) return { ok: false, error: CAPTCHA_FAILED };
+    if (!(await consumeNetworkLimit("feedback_visitor"))) return { ok: false, error: RATE_LIMITS.feedback.message };
   }
 
   // Written with the service role after the checks above: browsers can't

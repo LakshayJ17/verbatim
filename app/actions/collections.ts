@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
+import { consumeRateLimit } from "@/utils/rate-limit";
 
 const collectionSchema = z.object({
   name: z.string().trim().min(1, "Give the collection a name.").max(100, "Name is too long."),
@@ -37,6 +38,9 @@ export async function createCollection(name: string, description?: string) {
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user || user.is_anonymous) return { error: "Unauthorized" };
+
+  const limit = await consumeRateLimit(supabase, "collection_create");
+  if (!limit.ok) return { error: limit.error };
 
   const { data, error } = await supabase
     .from("collections")
